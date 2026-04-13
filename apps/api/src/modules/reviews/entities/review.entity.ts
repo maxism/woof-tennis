@@ -40,10 +40,10 @@ export class ReviewEntity {
   target: UserEntity;
 
   @Column({ type: 'smallint' })
-  poopRating: number;
+  ratingValue: number;
 
-  @Column({ type: 'smallint' })
-  starRating: number;
+  @Column({ type: 'varchar', length: 16 })
+  ratingStyle: 'poop' | 'star';
 
   @Column({ type: 'text', nullable: true })
   recommendation: string | null;

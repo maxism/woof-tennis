@@ -55,8 +55,8 @@ export class ReviewsService {
       bookingId: dto.bookingId,
       reviewerId,
       targetId: dto.targetId,
-      poopRating: dto.poopRating,
-      starRating: dto.starRating,
+      ratingValue: dto.ratingValue,
+      ratingStyle: dto.ratingStyle,
       recommendation: dto.recommendation || null,
       comment: dto.comment || null,
     });

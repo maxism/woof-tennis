@@ -5,8 +5,8 @@ export interface Review {
   bookingId: string;
   reviewerId: string;
   targetId: string;
-  poopRating: number;
-  starRating: number;
+  ratingValue: number;
+  ratingStyle: 'poop' | 'star';
   recommendation: string | null;
   comment: string | null;
   createdAt: string;

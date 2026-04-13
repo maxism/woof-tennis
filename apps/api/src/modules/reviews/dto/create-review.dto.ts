@@ -5,6 +5,7 @@ import {
   Max,
   IsOptional,
   IsString,
+  IsIn,
 } from 'class-validator';
 
 export class CreateReviewDto {
@@ -17,12 +18,11 @@ export class CreateReviewDto {
   @IsInt()
   @Min(1)
   @Max(3)
-  poopRating: number;
+  ratingValue: number;
 
-  @IsInt()
-  @Min(1)
-  @Max(3)
-  starRating: number;
+  @IsString()
+  @IsIn(['poop', 'star'])
+  ratingStyle: 'poop' | 'star';
 
   @IsOptional()
   @IsString()

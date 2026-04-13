@@ -252,8 +252,8 @@ export interface User {
 export interface UserStats {
   totalBookingsAsPlayer: number;
   totalBookingsAsCoach: number;
-  avgStarRatingAsPlayer: number | null;
-  avgStarRatingAsCoach: number | null;
+  avgRatingAsPlayer: number | null;
+  avgRatingAsCoach: number | null;
   pendingMakeupDebts: number;
 }
 

@@ -30,6 +30,9 @@ export class InitialSchema1713000000000 implements MigrationInterface {
         'makeup_assigned', 'makeup_resolved', 'play_session_joined'
       )
     `);
+    await queryRunner.query(`
+      CREATE TYPE "review_rating_style" AS ENUM ('poop', 'star')
+    `);
 
     // Users
     await queryRunner.query(`
@@ -180,8 +183,8 @@ export class InitialSchema1713000000000 implements MigrationInterface {
         "bookingId" uuid NOT NULL,
         "reviewerId" uuid NOT NULL,
         "targetId" uuid NOT NULL,
-        "poopRating" smallint NOT NULL,
-        "starRating" smallint NOT NULL,
+        "ratingValue" smallint NOT NULL,
+        "ratingStyle" "review_rating_style" NOT NULL,
         "recommendation" text,
         "comment" text,
         "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
@@ -190,8 +193,7 @@ export class InitialSchema1713000000000 implements MigrationInterface {
         CONSTRAINT "FK_reviews_booking" FOREIGN KEY ("bookingId") REFERENCES "bookings"("id") ON DELETE CASCADE,
         CONSTRAINT "FK_reviews_reviewer" FOREIGN KEY ("reviewerId") REFERENCES "users"("id") ON DELETE CASCADE,
         CONSTRAINT "FK_reviews_target" FOREIGN KEY ("targetId") REFERENCES "users"("id") ON DELETE CASCADE,
-        CONSTRAINT "CHK_poop_rating" CHECK ("poopRating" >= 1 AND "poopRating" <= 3),
-        CONSTRAINT "CHK_star_rating" CHECK ("starRating" >= 1 AND "starRating" <= 3)
+        CONSTRAINT "CHK_rating_value" CHECK ("ratingValue" >= 1 AND "ratingValue" <= 3)
       )
     `);
     await queryRunner.query(`CREATE INDEX "IDX_review_target_id" ON "reviews" ("targetId")`);
@@ -250,6 +252,7 @@ export class InitialSchema1713000000000 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE IF EXISTS "users" CASCADE`);
 
     await queryRunner.query(`DROP TYPE IF EXISTS "notification_type"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "review_rating_style"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "makeup_status"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "participant_status"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "play_session_status"`);

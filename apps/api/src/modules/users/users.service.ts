@@ -96,15 +96,15 @@ export class UsersService {
         .then((r) => parseInt(r?.count || '0', 10));
     }
 
-    const avgStarRatingAsPlayer = await qb
+    const avgRatingAsPlayer = await qb
       .createQueryBuilder()
-      .select('AVG(r."starRating")', 'avg')
+      .select('AVG(r."ratingValue")', 'avg')
       .from('reviews', 'r')
       .where('r."targetId" = :userId', { userId })
       .getRawOne()
       .then((r) => (r?.avg ? parseFloat(r.avg) : null));
 
-    const avgStarRatingAsCoach = isCoach ? avgStarRatingAsPlayer : null;
+    const avgRatingAsCoach = isCoach ? avgRatingAsPlayer : null;
 
     const pendingMakeupDebts = await qb
       .createQueryBuilder()
@@ -120,8 +120,8 @@ export class UsersService {
     return {
       totalBookingsAsPlayer,
       totalBookingsAsCoach,
-      avgStarRatingAsPlayer,
-      avgStarRatingAsCoach,
+      avgRatingAsPlayer,
+      avgRatingAsCoach,
       pendingMakeupDebts,
     };
   }
@@ -140,7 +140,7 @@ export class UsersService {
 
     const reviewStats = await qb
       .createQueryBuilder()
-      .select('AVG(r."starRating")', 'avg')
+      .select('AVG(r."ratingValue")', 'avg')
       .addSelect('COUNT(*)', 'count')
       .from('reviews', 'r')
       .where('r."targetId" = :userId', { userId })
@@ -148,7 +148,7 @@ export class UsersService {
 
     return {
       totalStudents,
-      avgStarRating: reviewStats?.avg ? parseFloat(reviewStats.avg) : null,
+      avgRating: reviewStats?.avg ? parseFloat(reviewStats.avg) : null,
       totalReviews: parseInt(reviewStats?.count || '0', 10),
     };
   }

@@ -22,8 +22,8 @@ export interface UserPublic {
 export interface UserStats {
   totalBookingsAsPlayer: number;
   totalBookingsAsCoach: number;
-  avgStarRatingAsPlayer: number | null;
-  avgStarRatingAsCoach: number | null;
+  avgRatingAsPlayer: number | null;
+  avgRatingAsCoach: number | null;
   pendingMakeupDebts: number;
 }
 
@@ -35,7 +35,7 @@ export interface CoachPublicProfile extends UserPublic {
   locations: { id: string; name: string; address: string; photoUrl: string | null }[];
   stats: {
     totalStudents: number;
-    avgStarRating: number | null;
+    avgRating: number | null;
     totalReviews: number;
   };
 }

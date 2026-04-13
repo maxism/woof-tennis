@@ -75,8 +75,8 @@ Authorization: Bearer <jwt_token>
   "stats": {
     "totalBookingsAsPlayer": 15,
     "totalBookingsAsCoach": 42,
-    "avgStarRatingAsPlayer": 2.5,
-    "avgStarRatingAsCoach": 2.8,
+    "avgRatingAsPlayer": 2.5,
+    "avgRatingAsCoach": 2.8,
     "pendingMakeupDebts": 1
   }
 }
@@ -112,7 +112,7 @@ Authorization: Bearer <jwt_token>
   "locations": [ ... ],
   "stats": {
     "totalStudents": 23,
-    "avgStarRating": 2.7,
+    "avgRating": 2.7,
     "totalReviews": 45
   }
 }
@@ -596,8 +596,8 @@ isActive: false  (optional)
 {
   "bookingId": "uuid",
   "targetId": "uuid",
-  "poopRating": 1,
-  "starRating": 3,
+  "ratingValue": 3,
+  "ratingStyle": "star",
   "recommendation": "Работай над бэкхендом, замах слишком широкий",
   "comment": "Хорошая тренировка, прогресс есть"
 }
@@ -608,7 +608,9 @@ isActive: false  (optional)
 - `reviewerId` (из JWT) — участник бронирования (игрок или тренер слота).
 - `targetId` — другой участник бронирования.
 - Отзыв от этого автора на это бронирование ещё не существует.
-- `poopRating`: 1-3, `starRating`: 1-3.
+- `ratingValue`: 1-3.
+- `ratingStyle`: `poop` или `star` (только визуальный формат).
+- Семантика единая: независимо от `ratingStyle`, 1 = слабая игра, 3 = сильная игра.
 
 **Response 201:** объект Review.
 
@@ -632,8 +634,8 @@ isActive: false  (optional)
       "bookingId": "uuid",
       "reviewer": { "id": "uuid", "firstName": "Мария", "photoUrl": "..." },
       "target": { "id": "uuid", "firstName": "Иван", "photoUrl": "..." },
-      "poopRating": 1,
-      "starRating": 3,
+      "ratingValue": 3,
+      "ratingStyle": "star",
       "recommendation": "Работай над бэкхендом...",
       "comment": "Хорошая тренировка",
       "createdAt": "2026-04-14T12:00:00Z"

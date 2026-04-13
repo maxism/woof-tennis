@@ -328,6 +328,9 @@ function generateInviteCode(): string {
 - Reviewer — участник бронирования (игрок или тренер слота)
 - Target — другой участник
 - Один отзыв на пару (booking + reviewer)
+- `ratingValue` в диапазоне 1-3
+- `ratingStyle` (`poop` | `star`) влияет только на визуальное отображение
+- Семантика оценки единая: 1 = слабая игра, 3 = сильная игра независимо от `ratingStyle`
 
 ### MakeupModule
 

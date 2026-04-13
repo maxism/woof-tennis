@@ -120,8 +120,8 @@ erDiagram
         uuid bookingId FK
         uuid reviewerId FK
         uuid targetId FK
-        smallint poopRating
-        smallint starRating
+        smallint ratingValue
+        varchar ratingStyle
         text recommendation
         text comment
         timestamp createdAt
@@ -330,8 +330,8 @@ erDiagram
 | `bookingId` | `uuid` | FK → Booking.id, NOT NULL | К какому бронированию относится |
 | `reviewerId` | `uuid` | FK → User.id, NOT NULL | Кто оставил |
 | `targetId` | `uuid` | FK → User.id, NOT NULL | Кому адресовано |
-| `poopRating` | `smallint` | NOT NULL, CHECK (1-3) | Рейтинг "какашка" (1-3) |
-| `starRating` | `smallint` | NOT NULL, CHECK (1-3) | Рейтинг "звезда" (1-3) |
+| `ratingValue` | `smallint` | NOT NULL, CHECK (1-3) | Единая оценка качества игры (1-3) |
+| `ratingStyle` | `review_rating_style` | NOT NULL | Визуальный стиль отображения: `poop` или `star` |
 | `recommendation` | `text` | NULL | Рекомендации в свободной форме |
 | `comment` | `text` | NULL | Комментарий |
 | `createdAt` | `timestamp` | NOT NULL, default now() | |
@@ -342,8 +342,8 @@ erDiagram
 
 **Бизнес-логика:**
 - Отзыв можно оставить только после того, как бронирование перешло в статус `completed`.
-- `poopRating`: 1 = одна какашка (плохо), 3 = три какашки (очень плохо).
-- `starRating`: 1 = одна звезда (нормально), 3 = три звезды (отлично).
+- `ratingValue`: 1-3, где 1 = слабая игра, 3 = сильная игра.
+- `ratingStyle` влияет только на визуальное представление (`poop` или `star`) и **не меняет смысл оценки**.
 
 ---
 
@@ -458,6 +458,12 @@ CREATE TYPE notification_type AS ENUM (
   'makeup_resolved',
   'slot_cancelled'
 );
+```
+
+### review_rating_style
+
+```sql
+CREATE TYPE review_rating_style AS ENUM ('poop', 'star');
 ```
 
 ## Правила каскадного удаления
