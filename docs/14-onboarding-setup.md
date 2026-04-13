@@ -8,7 +8,7 @@
 | Часть            | Где в репо        | Зачем                                   |
 | ---------------- | ----------------- | --------------------------------------- |
 | Фронт (Mini App) | `apps/web`        | React, открывается внутри Telegram      |
-| Бэкенд           | `apps/api`        | API, авторизация по `initData`, бот, БД |
+| Бэкенд           | `apps/api`        | API: Mini App (`initData`), в перспективе Login Widget; бот; БД |
 | Общие типы       | `packages/shared` | Не настраивается отдельно               |
 | База             | PostgreSQL        | Через Docker или свой инстанс           |
 
@@ -23,7 +23,7 @@
 
 1. Команда `/newbot`
 2. Имя и username бота (например `@WoofTennisBot`)
-3. Скопируйте **токен** вида `123456789:AAH...` — это `**TELEGRAM_BOT_TOKEN`**
+3. Скопируйте **токен** вида `123456789:AAH...` — это `TELEGRAM_BOT_TOKEN` в `.env`
 
 ### 2.2 Подключить Mini App к боту
 
@@ -41,14 +41,26 @@
 
 `/setcommands` → например: `start - Открыть приложение`
 
+### 2.5 Домен для Login Widget (веб-вход в браузере)
+
+Если на **обычном сайте** используется [Telegram Login Widget](https://core.telegram.org/widgets/login), Telegram проверяет **домен** страницы, с которой вызван виджет. Его нужно привязать к боту:
+
+1. В [@BotFather](https://t.me/BotFather): `/setdomain`
+2. Выберите бота
+3. Укажите **домен без схемы и пути**, например `app.example.com` или `wooftennis.com`
+
+Правила Telegram: только то, что допускает BotFather (обычно публичный домен с HTTPS на стороне сайта). Локальный `localhost` виджетом **не** подключают к прод-боту так же, как прод-домен — для разработки используют отдельного тестового бота, туннель с постоянным поддоменом или см. обсуждения в документации Telegram.
+
+Двухканальная авторизация (виджет + Mini App) и контракт API: `docs/03-api-spec.md`, `docs/15-auth-dual-channel-architecture.md`.
+
 ---
 
-**Куда вписать токен:** в корневой `.env` (см. ниже) переменная `**TELEGRAM_BOT_TOKEN`**.
+**Куда вписать токен:** в корневой `.env` (см. ниже) переменная `TELEGRAM_BOT_TOKEN`.
 
 **Куда вписать URL приложения:**
 
-- `**TELEGRAM_MINI_APP_URL`** (корневой `.env`) — тот же базовый URL, что в BotFather для Mini App (без лишнего слэша в конце), например `https://app.example.com`
-- Для локальной разработки фронта см. `apps/web/.env.example` — там `**VITE_TELEGRAM_BOT_APP_URL**` для кнопки «открыть в Telegram» из браузера (формат `https://t.me/YourBot/shortname`)
+- `TELEGRAM_MINI_APP_URL` (корневой `.env`) — тот же базовый URL, что в BotFather для Mini App (без лишнего слэша в конце), например `https://app.example.com`
+- Для локальной разработки фронта см. `apps/web/.env.example` — там `VITE_TELEGRAM_BOT_APP_URL` для кнопки «открыть в Telegram» из браузера (формат `https://t.me/YourBot/shortname`)
 
 ## 3. Файлы окружения: куда что класть
 
@@ -62,10 +74,10 @@
 | `DB_*`                        | Свой PostgreSQL или как в `docker-compose.yml`                                     |
 | `JWT_SECRET`                  | Случайная длинная строка (секрет подписи JWT)                                      |
 | `JWT_EXPIRES_IN`              | Опционально, например `7d`                                                         |
-| `**TELEGRAM_BOT_TOKEN`**      | Токен из BotFather                                                                 |
-| `**TELEGRAM_MINI_APP_URL**`   | HTTPS URL фронта (как в BotFather)                                                 |
-| `**TELEGRAM_WEBHOOK_URL**`    | `https://ваш-домен/bot/webhook` — куда Telegram шлёт апдейты бота                  |
-| `**TELEGRAM_WEBHOOK_SECRET**` | Сами придумайте секрет; тот же должен быть в настройках webhook (если используете) |
+| `TELEGRAM_BOT_TOKEN`      | Токен из BotFather                                                                 |
+| `TELEGRAM_MINI_APP_URL`   | HTTPS URL фронта (как в BotFather)                                                 |
+| `TELEGRAM_WEBHOOK_URL`    | `https://ваш-домен/bot/webhook` — куда Telegram шлёт апдейты бота                  |
+| `TELEGRAM_WEBHOOK_SECRET` | Сами придумайте секрет; тот же должен быть в настройках webhook (если используете) |
 | `PORT`                        | Обычно `3000` для API                                                              |
 
 
@@ -78,7 +90,7 @@
 
 | Переменная                  | Значение                                                                                                 |
 | --------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `**VITE_API_URL`**          | Базовый URL API **без** `/api/v1` на конце. Локально с Vite proxy часто оставляют пустым `VITE_API_URL=` |
+| `VITE_API_URL`          | Базовый URL API **без** `/api/v1` на конце. Локально с Vite proxy часто оставляют пустым `VITE_API_URL=` |
 | `VITE_UI_LOCALE`            | `ru` или `en`                                                                                            |
 | `VITE_TELEGRAM_BOT_APP_URL` | Ссылка на Mini App в TG: `https://t.me/YourBot/shortname`                                                |
 
@@ -115,7 +127,8 @@ npm run dev                # или dev:api + dev:web отдельно
 2. В `.env` на сервере: реальные `TELEGRAM_*`, `JWT_SECRET`, `DB_*`.
 3. Собрать фронт с правильным `VITE_API_URL`.
 4. В BotFather указать **тот же** URL Mini App, что отдаёт пользователям.
-5. Убедиться, что `**TELEGRAM_WEBHOOK_URL`** совпадает с тем, что реально открывается снаружи, и что секрет webhook совпадает с `TELEGRAM_WEBHOOK_SECRET`.
+5. Убедиться, что `TELEGRAM_WEBHOOK_URL` совпадает с тем, что реально открывается снаружи, и что секрет webhook совпадает с `TELEGRAM_WEBHOOK_SECRET`.
+6. Для Login Widget на сайте: домен зарегистрирован через `/setdomain` (п. 2.5).
 
 ## 6. Если что-то не работает
 
@@ -126,6 +139,7 @@ npm run dev                # или dev:api + dev:web отдельно
 | CORS                          | `TELEGRAM_MINI_APP_URL` в `main.ts` API должен совпадать с origin Mini App        |
 | Бот не отвечает / нет webhook | `TELEGRAM_WEBHOOK_URL`, HTTPS, Nginx, firewall                                    |
 | Фронт не видит API            | `VITE_API_URL` при сборке, proxy в dev, один ли хост в проде                      |
+| Виджет Telegram не грузится / ошибка домена | Для прод-сайта выполнен `/setdomain` для того же хоста, что в адресной строке |
 
 
 Детали по Telegram: `docs/07-telegram-integration.md`.  

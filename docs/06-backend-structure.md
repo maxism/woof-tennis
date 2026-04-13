@@ -16,6 +16,7 @@
 | class-transformer | latest | Трансформация DTO |
 | multer | latest | Загрузка файлов (фото локаций) |
 | uuid | latest | Генерация UUID |
+| `@nestjs/throttler` | latest | *(целевая модель)* лимиты на `POST /auth/*` |
 
 ## Расположение в монорепозитории
 
@@ -49,7 +50,8 @@ apps/api/
 │   │   ├── dto/
 │   │   │   └── pagination.dto.ts          # PaginationQueryDto, PaginatedResponseDto
 │   │   └── utils/
-│   │       ├── telegram-auth.util.ts      # HMAC-SHA256 валидация initData
+│   │       ├── telegram-auth.util.ts      # Валидация Mini App initData (WebAppData + HMAC)
+│   │       ├── telegram-login-widget.util.ts  # Валидация Login Widget (SHA256(bot_token) + HMAC) — целевая модель
 │   │       └── invite-code.util.ts        # Генерация коротких invite-кодов
 │   ├── config/
 │   │   ├── database.config.ts             # TypeORM configuration
@@ -58,10 +60,11 @@ apps/api/
 │   ├── modules/
 │   │   ├── auth/
 │   │   │   ├── auth.module.ts
-│   │   │   ├── auth.controller.ts         # POST /auth/telegram
-│   │   │   ├── auth.service.ts            # Валидация initData, JWT
+│   │   │   ├── auth.controller.ts         # POST /auth/telegram, POST /auth/telegram/widget
+│   │   │   ├── auth.service.ts            # Два входа → общий upsert + JWT
 │   │   │   ├── dto/
-│   │   │   │   ├── telegram-auth.dto.ts   # { initData: string }
+│   │   │   │   ├── telegram-auth.dto.ts   # { initData: string } — Mini App
+│   │   │   │   ├── telegram-widget-auth.dto.ts  # поля виджета snake_case — целевая модель
 │   │   │   │   └── auth-response.dto.ts   # { accessToken, user }
 │   │   │   └── strategies/
 │   │   │       └── jwt.strategy.ts        # Passport JWT strategy
@@ -160,6 +163,8 @@ apps/api/
 │       └── ...
 └── test/
     ├── app.e2e-spec.ts
+    ├── telegram-auth.util.spec.ts         # Mini App initData — целевая модель
+    ├── telegram-login-widget.util.spec.ts # Login Widget — целевая модель
     └── ...
 ```
 
@@ -201,12 +206,14 @@ graph TD
 
 ### AuthModule
 
-**Ответственность:** Валидация Telegram initData, управление JWT-сессиями.
+**Целевая ответственность** (см. [15-auth-dual-channel-architecture.md](15-auth-dual-channel-architecture.md)): два независимых входа Telegram → **один** `UsersService.upsert` → **один** формат JWT и ответа.
 
-**Ключевая логика:**
+**Текущая реализация (на момент синхронизации с доками):** в коде реализована ветка **Mini App** (`POST /auth/telegram`, `telegram-auth.util.ts`). Ветка **Login Widget** (`POST /auth/telegram/widget`, отдельный валидатор, DTO, тесты, rate limit) — по контракту `docs/03-api-spec.md`.
+
+**Ключевая логика — Mini App (`initData`):**
 
 ```typescript
-// telegram-auth.util.ts — алгоритм валидации
+// telegram-auth.util.ts — только Mini App; не использовать для Login Widget
 function validateInitData(initData: string, botToken: string): boolean {
   // 1. Распарсить initData как URLSearchParams
   // 2. Извлечь hash
@@ -217,6 +224,25 @@ function validateInitData(initData: string, botToken: string): boolean {
   // 7. Проверить auth_date не старше 24 часов
 }
 ```
+
+**Ключевая логика — Login Widget (отдельный модуль/файл):**
+
+```typescript
+// telegram-login-widget.util.ts — алгоритм из документации Telegram Login Widget
+function validateLoginWidgetPayload(fields: Record<string, string>, botToken: string): boolean {
+  // secret_key = SHA256(bot_token)
+  // data_check_string из всех переданных полей кроме hash, по алфавиту ключей
+  // hash === HMAC-SHA256(secret_key, data_check_string)
+  // + проверка auth_date (согласовать окно с продуктом / с initData)
+}
+```
+
+**Наблюдаемость и злоупотребления:**
+
+- Лимит частоты запросов на `POST /auth/telegram` и `POST /auth/telegram/widget` (например `@nestjs/throttler` или эквивалент за reverse proxy) → ответ `429` согласно `docs/03-api-spec.md`.
+- Логи неуспешной валидации без утечки `TELEGRAM_BOT_TOKEN`.
+
+**Тесты:** юнит-тесты для обоих валидаторов; при необходимости e2e на happy-path оба эндпоинта.
 
 **JWT Payload:**
 

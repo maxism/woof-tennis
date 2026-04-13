@@ -2,7 +2,7 @@
 
 **Base URL:** `/api/v1`
 
-Все эндпоинты (кроме публичных `POST /auth/telegram` и планируемого `POST /auth/telegram/widget`) требуют JWT-токен в заголовке:
+Все эндпоинты (кроме публичных `POST /auth/telegram` и `POST /auth/telegram/widget`) требуют JWT-токен в заголовке:
 
 ```
 Authorization: Bearer <jwt_token>
@@ -52,11 +52,44 @@ Authorization: Bearer <jwt_token>
 **Errors:**
 - `401` — невалидная подпись initData
 
-### POST `/auth/telegram/widget` *(план, см. [15](15-auth-dual-channel-architecture.md))*
+### POST `/auth/telegram/widget`
 
-Авторизация через [Telegram Login Widget](https://core.telegram.org/widgets/login) в обычном браузере. Набор полей и проверка подписи **отличаются** от Mini App `initData`; на бэкенде — отдельный валидатор по [оф. инструкции](https://core.telegram.org/widgets/login#checking-authorization).
+Авторизация через [Telegram Login Widget](https://core.telegram.org/widgets/login) в обычном браузере. Подпись проверяется **отдельным** алгоритмом от Mini App `initData` ([Checking authorization](https://core.telegram.org/widgets/login#checking-authorization)).
 
-**Request Body** (уточнить при реализации — все поля, которые возвращает виджет в колбэке, включая `hash`, `auth_date`, `id`, …):
+**Контракт тела запроса:** JSON с **теми же именами полей (snake_case), что возвращает виджет** в `data-onauth(user)` или в query при редирект-режиме. Фронт передаёт объект **без переименования ключей** и **без добавления произвольных полей** — иначе вычисленный на сервере `hash` не совпадёт с переданным.
+
+**Обязательные поля:**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | integer | Telegram user id |
+| `first_name` | string | Имя |
+| `auth_date` | integer | Unix time выдачи авторизации |
+| `hash` | string | HMAC-подпись (hex), см. документацию Telegram |
+
+**Опциональные поля** (включать в тело и в расчёт подписи **только если** они пришли от виджета):
+
+| Поле | Тип |
+|------|-----|
+| `last_name` | string |
+| `username` | string |
+| `photo_url` | string |
+
+**Пример Request Body:**
+
+```json
+{
+  "id": 123456789,
+  "first_name": "Иван",
+  "last_name": "Петров",
+  "username": "ivantennis",
+  "photo_url": "https://t.me/i/userpic/320/....jpg",
+  "auth_date": 1713000000,
+  "hash": "abcdef0123..."
+}
+```
+
+Минимально допустимый набор:
 
 ```json
 {
@@ -67,10 +100,23 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
-**Response 200:** тот же формат, что у `POST /auth/telegram` (`accessToken`, `user`).
+**Логика (сервер):**
+
+1. Проверить типы и наличие обязательных полей.
+2. Собрать `data_check_string` и проверить `hash` по алгоритму Login Widget (не смешивать с `initData`).
+3. Проверить актуальность `auth_date` (рекомендуется тот же порядок величины, что и для Mini App, например не старше 24 ч — точное окно зафиксировать в коде и здесь при необходимости).
+4. Upsert пользователя по `id` → `telegramId`, маппинг имён в доменную модель (`firstName`, `photoUrl` и т.д.).
+5. Выдать тот же JWT и DTO `user`, что и для `POST /auth/telegram`.
+
+**Response 200:** идентичен `POST /auth/telegram` (`accessToken`, `user`).
 
 **Errors:**
-- `401` — невалидная подпись или просроченный `auth_date`
+
+- `400` — невалидное тело (типы, отсутствуют обязательные поля)
+- `401` — невалидная подпись `hash` или отклонённый `auth_date`
+- `429` — превышен лимит запросов на auth-эндпоинты (rate limiting; пороги — конфигурация сервера)
+
+**Примечание:** домен страницы, на которой встроен виджет, должен быть зарегистрирован у бота через BotFather (`/setdomain`), см. `docs/14-onboarding-setup.md`.
 
 ---
 
