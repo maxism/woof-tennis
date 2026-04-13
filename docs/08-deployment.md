@@ -20,7 +20,8 @@ graph TB
     TG[Telegram Bot API] -->|"webhook"| Nginx
 ```
 
-Проект организован как **монорепозиторий** (см. `10-monorepo-structure.md`). Это влияет на Docker-контексты, пути сборки и CI/CD.
+Проект организован как **монорепозиторий** (см. `10-monorepo-structure.md`). Это влияет на Docker-контексты, пути сборки и CI/CD.  
+Детальные шаги pipeline сборки и частые проблемы см. в `13-build-stages.md`.
 
 ## Docker Compose
 

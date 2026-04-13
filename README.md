@@ -15,10 +15,12 @@ Telegram Mini App для букинга теннисных тренировок 
 - [08 — Деплой и инфраструктура](docs/08-deployment.md)
 - [09 — Roadmap](docs/09-roadmap.md)
 - [10 — Структура монорепозитория](docs/10-monorepo-structure.md)
+- [13 — Этапы сборки проекта](docs/13-build-stages.md)
 
 ### Дизайн и задачи
 - [11 — Дизайн-артефакты](docs/11-design-artifacts.md)
 - [12 — Набор задач для Frontend](docs/12-frontend-tasks.md)
+- [13 — Этапы сборки проекта](docs/13-build-stages.md)
 
 ## Ключевые принципы
 - Монорепозиторий: `apps/web`, `apps/api`, `packages/shared`
@@ -29,3 +31,12 @@ Telegram Mini App для букинга теннисных тренировок 
 ## Следующий шаг
 
 После согласования документации можно переходить к реализации кода по задачам из `docs/12-frontend-tasks.md` и аналогичному бэкенд-плану.
+
+## Сборка в двух командах
+
+```bash
+npm install
+npm run build
+```
+
+Полный пайплайн сборки и деплоя: `docs/13-build-stages.md`.

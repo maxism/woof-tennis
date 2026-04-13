@@ -106,7 +106,8 @@ wooftennis/
     "build:api": "turbo build --filter=@wooftennis/api",
     "build:web": "turbo build --filter=@wooftennis/web",
     "db:migration:generate": "npm run migration:generate --workspace=@wooftennis/api",
-    "db:migration:run": "npm run migration:run --workspace=@wooftennis/api"
+    "db:migration:run": "npm run migration:run --workspace=@wooftennis/api",
+    "db:migration:revert": "npm run migration:revert --workspace=@wooftennis/api"
   },
   "devDependencies": {
     "turbo": "^2",
@@ -438,6 +439,7 @@ function BookingCard({ booking }: { booking: BookingDetailed }) {
 | `npm run test` | Тесты всех пакетов |
 | `npm run db:migration:generate` | Сгенерировать миграцию TypeORM |
 | `npm run db:migration:run` | Применить миграции |
+| `npm run db:migration:revert` | Откатить последнюю миграцию |
 
 ## Добавление нового shared-типа
 
