@@ -14,12 +14,13 @@ WoofTennis — Telegram Mini App для букинга теннисных тре
 
 | Принцип | Описание |
 |---|---|
+| Монорепозиторий | Единый репозиторий: `apps/api`, `apps/web`, `packages/shared`. npm workspaces + Turborepo |
 | Mobile-first | Весь UI проектируется в первую очередь под мобильные устройства внутри Telegram |
 | Dual-role | Пользователь одновременно может быть и тренером, и игроком |
 | No payments | Приложение — только букинг, без интеграции оплат (на текущем этапе) |
 | Telegram-native | Авторизация, нотификации, шаринг — всё через Telegram |
 | Invite-link sharing | Самостоятельная игра v1 — через инвайт-ссылки |
-| Русский язык — основной | Весь пользовательский интерфейс, сообщения об ошибках, нотификации, тексты бота — на русском. Код (переменные, API-поля) — на английском. |
+| Русский язык — основной | Весь пользовательский интерфейс, сообщения об ошибках, нотификации, тексты бота — на русском. Код (переменные, API-поля) — на английском |
 
 ## Tech Stack
 
@@ -49,13 +50,15 @@ WoofTennis — Telegram Mini App для букинга теннисных тре
 | `@nestjs/jwt` | JWT-токены для сессий |
 | class-validator / class-transformer | Валидация DTO |
 
-### Инфраструктура
+### Монорепо и инфраструктура
 
 | Технология | Назначение |
 |---|---|
+| npm workspaces | Управление пакетами монорепозитория |
+| Turborepo | Оркестрация сборки, кэширование задач |
 | Docker / Docker Compose | Контейнеризация |
 | Nginx | Reverse proxy, раздача SPA |
-| GitHub Actions (опционально) | CI/CD |
+| GitHub Actions | CI/CD |
 
 ## Высокоуровневая архитектура
 
@@ -66,27 +69,35 @@ graph TB
         TGBot[Telegram Bot API]
     end
 
-    subgraph frontend [Frontend — React SPA]
-        MiniApp["Mini App (React + Vite)"]
-    end
+    subgraph monorepo ["Монорепозиторий WoofTennis"]
+        subgraph web ["apps/web — React SPA"]
+            MiniApp["Mini App (React + Vite)"]
+        end
 
-    subgraph backend [Backend — NestJS]
-        API[REST API]
-        BotService[Bot Service]
-        Scheduler[Cron Scheduler]
+        subgraph api ["apps/api — NestJS"]
+            API[REST API]
+            BotService[Bot Service]
+            Scheduler[Cron Scheduler]
+        end
+
+        subgraph shared ["packages/shared"]
+            Types["Типы, enum'ы, константы"]
+        end
     end
 
     subgraph storage [Storage]
         DB[(PostgreSQL)]
     end
 
-    TGClient -->|"opens Mini App"| MiniApp
+    TGClient -->|"открывает Mini App"| MiniApp
     MiniApp -->|"HTTP + JWT"| API
     API --> DB
     BotService --> TGBot
     TGBot -->|"webhook"| BotService
-    Scheduler -->|"generate slots, reminders"| API
-    API -->|"send notifications"| BotService
+    Scheduler -->|"генерация слотов, напоминания"| API
+    API -->|"отправка уведомлений"| BotService
+    shared -.->|"импорт типов"| web
+    shared -.->|"импорт типов"| api
 ```
 
 ### Поток данных

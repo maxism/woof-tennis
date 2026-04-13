@@ -20,7 +20,11 @@ graph TB
     TG[Telegram Bot API] -->|"webhook"| Nginx
 ```
 
+Проект организован как **монорепозиторий** (см. `10-monorepo-structure.md`). Это влияет на Docker-контексты, пути сборки и CI/CD.
+
 ## Docker Compose
+
+Файл `docker-compose.yml` лежит в корне монорепозитория.
 
 ### docker-compose.yml
 
@@ -48,8 +52,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: wooftennis-api
     restart: unless-stopped
     depends_on:
@@ -83,9 +87,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./apps/web/dist:/usr/share/nginx/html:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
       - uploads:/app/uploads:ro
@@ -103,23 +106,45 @@ volumes:
   uploads:
 ```
 
-### Backend Dockerfile
+**Ключевые отличия от не-монорепо подхода:**
+- `api.build.context: .` — корень репозитория, чтобы Docker видел `packages/shared`
+- `api.build.dockerfile: apps/api/Dockerfile` — Dockerfile внутри пакета api
+- `nginx.volumes` — SPA берётся из `./apps/web/dist`
+
+### API Dockerfile (apps/api/Dockerfile)
+
+Dockerfile собирает API в контексте корня монорепозитория, чтобы иметь доступ к `packages/shared`.
 
 ```dockerfile
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-COPY package*.json ./
+
+# Копируем корневые файлы монорепозитория
+COPY package.json package-lock.json turbo.json tsconfig.base.json ./
+
+# Копируем package.json всех workspace-пакетов для кэширования npm ci
+COPY apps/api/package.json ./apps/api/
+COPY packages/shared/package.json ./packages/shared/
+
+# Устанавливаем зависимости
 RUN npm ci
-COPY . .
-RUN npm run build
+
+# Копируем исходники
+COPY packages/shared/ ./packages/shared/
+COPY apps/api/ ./apps/api/
+
+# Собираем shared → api через Turborepo
+RUN npx turbo build --filter=@wooftennis/api
 
 FROM node:20-alpine AS runner
 
 WORKDIR /app
-COPY --from=builder /app/dist ./dist
+
+# Копируем собранный API и его зависимости
+COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/apps/api/package.json ./
 
 RUN mkdir -p uploads
 
@@ -156,7 +181,7 @@ server {
     ssl_certificate /etc/letsencrypt/live/wooftennis.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/wooftennis.com/privkey.pem;
 
-    # SPA — React frontend
+    # SPA — React frontend (собранный apps/web/dist)
     location / {
         root /usr/share/nginx/html;
         index index.html;
@@ -199,7 +224,7 @@ server {
 
 ## Env-переменные
 
-### .env.example
+### .env.example (корень монорепозитория)
 
 ```bash
 # ======== Database ========
@@ -233,14 +258,12 @@ cd wooftennis
 cp .env.example .env
 # Отредактировать .env
 
-# 3. Собрать фронтенд
-cd frontend
-npm ci
-npm run build   # Результат в frontend/dist/
-cd ..
+# 3. Установить зависимости и собрать фронтенд
+npm install
+VITE_API_URL=https://wooftennis.com npx turbo build --filter=@wooftennis/web
+# Результат в apps/web/dist/
 
 # 4. Получить SSL-сертификат (первый раз)
-# Сначала запустить nginx без SSL, с only acme-challenge
 docker compose up -d nginx
 docker compose run certbot certonly --webroot \
   -w /var/www/certbot \
@@ -251,6 +274,8 @@ docker compose run certbot certonly --webroot \
 docker compose up -d
 
 # 6. Применить миграции
+docker compose exec api node -e "require('./dist/data-source').default.initialize().then(ds => ds.runMigrations())"
+# Или через npm script внутри контейнера:
 docker compose exec api npm run migration:run
 ```
 
@@ -260,30 +285,35 @@ docker compose exec api npm run migration:run
 # 1. Забрать изменения
 git pull origin main
 
-# 2. Пересобрать фронтенд (если менялся)
-cd frontend && npm ci && npm run build && cd ..
+# 2. Установить зависимости (если изменились)
+npm install
 
-# 3. Пересобрать и перезапустить API (если менялся)
+# 3. Пересобрать фронтенд (если менялся apps/web или packages/shared)
+VITE_API_URL=https://wooftennis.com npx turbo build --filter=@wooftennis/web
+
+# 4. Пересобрать и перезапустить API (если менялся apps/api или packages/shared)
 docker compose build api
 docker compose up -d api
 
-# 4. Применить миграции (если есть новые)
+# 5. Применить миграции (если есть новые)
 docker compose exec api npm run migration:run
 ```
 
 ## CI/CD (GitHub Actions)
 
-### .github/workflows/deploy.yml
+### .github/workflows/ci.yml
 
 ```yaml
-name: Deploy
+name: CI
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  test:
+  lint-and-test:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -301,20 +331,23 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
 
-      - name: Install & test backend
-        working-directory: backend
-        run: |
-          npm ci
-          npm run lint
-          npm run test
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint all packages
+        run: npx turbo lint
+
+      - name: Build shared package
+        run: npx turbo build --filter=@wooftennis/shared
+
+      - name: Test API
+        run: npx turbo test --filter=@wooftennis/api
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -324,17 +357,14 @@ jobs:
           JWT_SECRET: test-secret
           TELEGRAM_BOT_TOKEN: test-token
 
-      - name: Install & build frontend
-        working-directory: frontend
-        run: |
-          npm ci
-          npm run lint
-          npm run build
+      - name: Build frontend
+        run: npx turbo build --filter=@wooftennis/web
         env:
           VITE_API_URL: https://wooftennis.com
 
   deploy:
-    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: lint-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to server
@@ -346,11 +376,17 @@ jobs:
           script: |
             cd /opt/wooftennis
             git pull origin main
-            cd frontend && npm ci && npm run build && cd ..
+            npm ci
+            VITE_API_URL=https://wooftennis.com npx turbo build --filter=@wooftennis/web
             docker compose build api
             docker compose up -d api
             docker compose exec -T api npm run migration:run
 ```
+
+**Преимущества Turborepo в CI:**
+- `npx turbo lint` / `npx turbo test` — запускает задачи только для изменённых пакетов
+- Кэширование результатов между запусками (remote cache можно подключить через Vercel)
+- Автоматическое определение порядка: shared собирается раньше api и web
 
 ## Мониторинг и логирование
 
@@ -393,4 +429,36 @@ docker compose exec -T postgres psql -U wooftennis wooftennis < backup_20260413.
 ```bash
 # crontab -e
 0 3 * * * cd /opt/wooftennis && docker compose exec -T postgres pg_dump -U wooftennis wooftennis | gzip > /opt/backups/wooftennis_$(date +\%Y\%m\%d).sql.gz
+```
+
+## Локальная разработка
+
+```bash
+# Установить все зависимости из корня
+npm install
+
+# Запустить PostgreSQL (если нет локального)
+docker compose up -d postgres
+
+# Запустить API + Web параллельно через Turborepo
+npm run dev
+
+# Или по отдельности
+npm run dev:api    # NestJS watch mode на :3000
+npm run dev:web    # Vite dev server на :5173
+```
+
+Vite dev server проксирует API-запросы на `localhost:3000` через настройку в `vite.config.ts`:
+
+```typescript
+// apps/web/vite.config.ts
+export default defineConfig({
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3000',
+      '/bot': 'http://localhost:3000',
+      '/uploads': 'http://localhost:3000',
+    },
+  },
+});
 ```

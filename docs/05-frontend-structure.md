@@ -16,15 +16,19 @@
 | date-fns | latest | Работа с датами |
 | react-hot-toast | latest | Тост-нотификации |
 
+## Расположение в монорепозитории
+
+Фронтенд живёт в `apps/web/`. Типы, enum'ы и константы импортируются из `@wooftennis/shared` (см. `10-monorepo-structure.md`).
+
 ## Структура проекта
 
 ```
-frontend/
+apps/web/
 ├── index.html
 ├── vite.config.ts
 ├── tailwind.config.ts
-├── tsconfig.json
-├── package.json
+├── tsconfig.json                   # extends ../../tsconfig.base.json
+├── package.json                    # name: @wooftennis/web
 ├── public/
 │   └── favicon.svg
 └── src/
@@ -113,26 +117,20 @@ frontend/
     │   └── notification/
     │       ├── NotificationCard.tsx
     │       └── NotificationBadge.tsx # Индикатор непрочитанных
-    ├── types/                      # TypeScript типы
-    │   ├── user.ts
-    │   ├── location.ts
-    │   ├── schedule-template.ts
-    │   ├── slot.ts
-    │   ├── booking.ts
-    │   ├── play-session.ts
-    │   ├── review.ts
-    │   ├── makeup-debt.ts
-    │   ├── notification.ts
-    │   └── api.ts                  # Общие типы: PaginatedResponse, ApiError
     ├── utils/
     │   ├── telegram.ts             # Хелперы для TG Mini App SDK
     │   ├── date.ts                 # Форматирование дат
     │   ├── invite.ts               # Генерация и парсинг инвайт-ссылок
-    │   ├── constants.ts            # Маршруты, enum-маппинги
-    │   └── i18n.ts                # Словарь UI-строк (русский — основной язык)
+    │   ├── constants.ts            # Маршруты
+    │   └── i18n.ts                 # Словарь UI-строк (русский — основной язык)
     └── styles/
         └── globals.css             # Tailwind directives, TG theme vars
 ```
+
+**Что не хранится в apps/web:**
+- Типы сущностей (`User`, `Booking`, `Slot` и т.д.) — в `@wooftennis/shared`
+- Enum'ы (`BookingStatus`, `SlotStatus` и т.д.) — в `@wooftennis/shared`
+- Константы (`DAYS_OF_WEEK`, `ALLOWED_SLOT_DURATIONS`) — в `@wooftennis/shared`
 
 ## Маршрутизация
 
@@ -208,6 +206,8 @@ frontend/
 ### Auth Store (Zustand)
 
 ```typescript
+import type { User } from '@wooftennis/shared';
+
 interface AuthState {
   token: string | null;
   user: User | null;
@@ -240,6 +240,8 @@ interface UIState {
 ## API-клиент (Axios)
 
 ```typescript
+import type { ApiError } from '@wooftennis/shared';
+
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL + '/api/v1',
 });

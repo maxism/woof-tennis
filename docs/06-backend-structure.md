@@ -17,15 +17,19 @@
 | multer | latest | Загрузка файлов (фото локаций) |
 | uuid | latest | Генерация UUID |
 
+## Расположение в монорепозитории
+
+Бэкенд живёт в `apps/api/`. Типы, enum'ы и константы импортируются из `@wooftennis/shared` (см. `10-monorepo-structure.md`).
+
 ## Структура проекта
 
 ```
-backend/
+apps/api/
 ├── nest-cli.json
-├── tsconfig.json
+├── tsconfig.json                        # extends ../../tsconfig.base.json
 ├── tsconfig.build.json
-├── package.json
-├── .env.example
+├── package.json                         # name: @wooftennis/api
+├── Dockerfile
 ├── src/
 │   ├── main.ts                          # Bootstrap, CORS, Swagger
 │   ├── app.module.ts                    # Root module
@@ -44,14 +48,6 @@ backend/
 │   │   │   └── uuid-validation.pipe.ts
 │   │   ├── dto/
 │   │   │   └── pagination.dto.ts          # PaginationQueryDto, PaginatedResponseDto
-│   │   ├── enums/
-│   │   │   ├── slot-status.enum.ts
-│   │   │   ├── slot-source.enum.ts
-│   │   │   ├── booking-status.enum.ts
-│   │   │   ├── play-session-status.enum.ts
-│   │   │   ├── participant-status.enum.ts
-│   │   │   ├── makeup-status.enum.ts
-│   │   │   └── notification-type.enum.ts
 │   │   └── utils/
 │   │       ├── telegram-auth.util.ts      # HMAC-SHA256 валидация initData
 │   │       └── invite-code.util.ts        # Генерация коротких invite-кодов
@@ -167,6 +163,13 @@ backend/
     └── ...
 ```
 
+**Что не хранится в apps/api:**
+- Enum'ы (`BookingStatus`, `SlotStatus` и т.д.) — в `@wooftennis/shared`, импортируются как `import { BookingStatus } from '@wooftennis/shared'`
+- Типы интерфейсов API-ответов (`User`, `Booking` и т.д.) — в `@wooftennis/shared`
+- Константы (`DAYS_OF_WEEK`, `ALLOWED_SLOT_DURATIONS`) — в `@wooftennis/shared`
+
+TypeORM-сущности (`*.entity.ts`) остаются в `apps/api`, но используют enum'ы из shared.
+
 ## Модули и их зависимости
 
 ```mermaid
@@ -252,7 +255,8 @@ interface JwtPayload {
 **SlotGeneratorService:**
 
 ```typescript
-// Автогенерация слотов из шаблонов
+import { SlotStatus, SlotSource } from '@wooftennis/shared';
+
 async generateSlotsForPeriod(coachId: string, dateFrom: Date, dateTo: Date) {
   // 1. Получить все активные шаблоны тренера
   // 2. Для каждого дня в периоде:
@@ -342,6 +346,8 @@ function generateInviteCode(): string {
 **Интерфейс сервиса:**
 
 ```typescript
+import { NotificationType } from '@wooftennis/shared';
+
 interface NotificationPayload {
   userId: string;
   type: NotificationType;
@@ -480,14 +486,20 @@ export const dataSourceOptions: DataSourceOptions = {
 Стратегия: все изменения схемы — через миграции.
 
 ```bash
+# Из корня монорепозитория:
+
 # Генерация миграции из изменений в entities
-npm run migration:generate -- -n MigrationName
+npm run db:migration:generate -- -n MigrationName
 
 # Применение миграций
-npm run migration:run
+npm run db:migration:run
+
+# Или напрямую в workspace:
+npm run migration:generate --workspace=@wooftennis/api -- -n MigrationName
+npm run migration:run --workspace=@wooftennis/api
 
 # Откат последней миграции
-npm run migration:revert
+npm run migration:revert --workspace=@wooftennis/api
 ```
 
 ### Начальная миграция
