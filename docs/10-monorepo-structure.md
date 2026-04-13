@@ -32,7 +32,9 @@ wooftennis/
 ├── docs/                        # Архитектурная документация
 │   ├── 01-overview.md
 │   ├── ...
-│   └── 10-monorepo-structure.md
+│   ├── 10-monorepo-structure.md
+│   ├── 11-design-artifacts.md
+│   └── 12-frontend-tasks.md
 ├── .github/
 │   └── workflows/
 │       └── ci.yml               # GitHub Actions

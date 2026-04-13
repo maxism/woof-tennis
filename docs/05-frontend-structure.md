@@ -183,7 +183,7 @@ apps/web/
 
 | Иконка | Лейбл | Маршрут |
 |---|---|---|
-| Calendar | Мои трени | `/` |
+| Calendar | Мои тренировки | `/` |
 | Search | Тренеры | `/player/search` |
 | Tennis | Игра | `/play/new` |
 | Bell | Уведомления | `/notifications` |
@@ -390,13 +390,22 @@ export default {
 ## Локализация
 
 Основной язык интерфейса — **русский**. Все пользовательские строки (кнопки, заголовки, сообщения об ошибках, placeholder'ы, нотификации) — на русском.
+Английский язык используется как **комплиментарный**: fallback-словарь и база для будущего переключения локали без изменений визуальной структуры.
+
+## Темизация и визуальный стиль
+
+- Обязательна поддержка двух тем: **light** и **dark** (на базе Telegram `themeParams`).
+- UI должен оставаться **минималистичным**: без перегрузки декоративными элементами, с фокусом на понятные действия.
+- На каждом экране — один главный CTA (приоритетно через `Telegram MainButton`), вторичные действия визуально приглушены.
+- Для референса экранов использовать `docs/11-design-artifacts.md`.
 
 ### Словарь UI-строк (utils/i18n.ts)
 
-Все текстовые константы собраны в одном месте для единообразия и будущей поддержки мультиязычности.
+Все текстовые константы собраны в одном месте. Формат словаря: `ru` (основной) и `en` (комплиментарный fallback).
 
 ```typescript
 export const UI = {
+  ru: {
   // Навигация
   nav: {
     myTrainings: 'Мои тренировки',
@@ -529,8 +538,36 @@ export const UI = {
   // Дни недели
   weekdays: ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'],
   weekdaysShort: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+  },
+  en: {
+    // Навигация
+    nav: {
+      myTrainings: 'My trainings',
+      coaches: 'Coaches',
+      play: 'Play',
+      notifications: 'Notifications',
+      profile: 'Profile',
+      schedule: 'Schedule',
+      locations: 'Locations',
+    },
+    // Остальные домены (booking, slot, review...) повторяют структуру ru
+  },
 } as const;
+
+type Locale = keyof typeof UI;
+type Domain = keyof typeof UI.ru;
+type DomainKey<D extends Domain> = keyof typeof UI.ru[D];
+
+export function t<D extends Domain>(locale: Locale, domain: D, key: DomainKey<D>): string {
+  return (
+    UI[locale]?.[domain]?.[key as never] ??
+    UI.ru[domain]?.[key as never] ??
+    `${String(domain)}.${String(key)}`
+  );
+}
 ```
+
+Fallback-стратегия строго соответствует дизайнерскому документу: `requested locale -> ru -> key`.
 
 ### Серверные сообщения об ошибках
 
