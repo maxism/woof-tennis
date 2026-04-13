@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { getTelegramInitData } from '@/utils/telegram';
+import { getTelegramInitData, isTelegramMiniApp } from '@/utils/telegram';
 import { fetchMeWithToken } from '@/api/users';
 
 async function bootstrapAuth(): Promise<void> {
   const { login, setSession, logout, setLoading, token } = useAuthStore.getState();
 
+  /** Внутренняя отладка (docs/15 §7 — в UI не рекламируем). */
   const dev = import.meta.env.VITE_DEV_ACCESS_TOKEN;
   if (dev?.trim()) {
     const t = dev.trim();
@@ -20,7 +21,7 @@ async function bootstrapAuth(): Promise<void> {
   }
 
   const initData = getTelegramInitData();
-  if (initData) {
+  if (isTelegramMiniApp() && initData) {
     await login(initData);
     return;
   }

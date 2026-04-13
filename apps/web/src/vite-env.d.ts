@@ -4,8 +4,8 @@ interface ImportMetaEnv {
   readonly VITE_API_URL: string;
   readonly VITE_DEV_ACCESS_TOKEN: string;
   readonly VITE_UI_LOCALE: string;
-  /** Прямая ссылка на Mini App: https://t.me/BotUserName/short_name */
-  readonly VITE_TELEGRAM_BOT_APP_URL: string;
+  /** Имя бота для Login Widget (без @), см. docs/15-auth-dual-channel-architecture.md */
+  readonly VITE_TELEGRAM_BOT_USERNAME: string;
 }
 
 interface ImportMeta {

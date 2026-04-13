@@ -1,8 +1,13 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { UserWithStats } from '@wooftennis/shared';
-import { loginWithTelegram } from '@/api/auth';
+import {
+  loginWithTelegram,
+  loginWithTelegramWidget,
+  type TelegramWidgetAuthPayload,
+} from '@/api/auth';
 import { fetchMeWithToken } from '@/api/users';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 interface AuthState {
   token: string | null;
@@ -11,6 +16,7 @@ interface AuthState {
   isLoading: boolean;
   authError: string | null;
   login: (initData: string) => Promise<void>;
+  loginWithWidget: (payload: TelegramWidgetAuthPayload) => Promise<void>;
   setSession: (token: string, user: UserWithStats) => void;
   logout: () => void;
   updateUser: (data: Partial<UserWithStats>) => void;
@@ -49,16 +55,35 @@ export const useAuthStore = create<AuthState>()(
             authError: null,
           });
         } catch (e: unknown) {
-          const msg =
-            e && typeof e === 'object' && 'message' in e
-              ? String((e as { message?: string }).message)
-              : 'Auth failed';
           set({
             token: null,
             user: null,
             isAuthenticated: false,
             isLoading: false,
-            authError: msg,
+            authError: getApiErrorMessage(e, 'Auth failed'),
+          });
+        }
+      },
+
+      loginWithWidget: async (payload: TelegramWidgetAuthPayload) => {
+        set({ isLoading: true, authError: null });
+        try {
+          const { accessToken } = await loginWithTelegramWidget(payload);
+          const me = await fetchMeWithToken(accessToken);
+          set({
+            token: accessToken,
+            user: me,
+            isAuthenticated: true,
+            isLoading: false,
+            authError: null,
+          });
+        } catch (e: unknown) {
+          set({
+            token: null,
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            authError: getApiErrorMessage(e, 'Auth failed'),
           });
         }
       },

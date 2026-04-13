@@ -1,5 +1,8 @@
 import { createHmac } from 'crypto';
 
+/** Макс. возраст `auth_date` (сек) для Mini App и Login Widget. */
+export const TELEGRAM_AUTH_MAX_AGE_SEC = 86400;
+
 export interface TelegramUser {
   id: number;
   first_name: string;
@@ -39,7 +42,7 @@ export function validateTelegramInitData(
 
   const authDate = parseInt(params.get('auth_date') || '0', 10);
   const now = Math.floor(Date.now() / 1000);
-  if (now - authDate > 86400) {
+  if (now - authDate > TELEGRAM_AUTH_MAX_AGE_SEC) {
     return null;
   }
 

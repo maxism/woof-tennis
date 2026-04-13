@@ -40,12 +40,14 @@ const ru = {
     enableCoach: 'Стать тренером',
   },
   auth: {
-    openInTelegram: 'Войти через Telegram',
-    miniAppHint:
-      'Откроется бот с Mini App в Telegram — там вы автоматически войдёте в аккаунт.',
-    missingBotUrl:
-      'Укажите в apps/web/.env ссылку на Mini App, например: VITE_TELEGRAM_BOT_APP_URL=https://t.me/ИмяБота/short_name (short name из @BotFather → Bot Settings → Configure Mini App).',
     retryLogin: 'Повторить вход',
+    miniAppHint:
+      'Вход из Mini App не выполнен автоматически. Нажмите «Повторить вход» или откройте приложение заново из Telegram.',
+    webLoginIntro:
+      'Войдите через официальный виджет Telegram ниже. Домен сайта должен быть добавлен у бота командой /setdomain (см. docs/14-onboarding-setup.md).',
+    widgetLegal: 'Авторизация обрабатывается Telegram; мы получаем только подтверждённые данные профиля.',
+    missingBotUsername:
+      'Задайте в apps/web/.env имя бота без @: VITE_TELEGRAM_BOT_USERNAME=YourBot (для Login Widget).',
   },
   booking: {
     book: 'Забронировать',
@@ -147,7 +149,7 @@ const ru = {
     open: 'Открыть',
     comingSoon: 'Скоро здесь будет больше возможностей.',
     devNoTelegram:
-      'В обычном браузере нет данных Telegram — нажмите кнопку ниже или задайте VITE_DEV_ACCESS_TOKEN (JWT с бэкенда).',
+      'Для отладки без виджета можно задать VITE_DEV_ACCESS_TOKEN (JWT) в apps/web/.env — только для разработки.',
   },
   home: {
     titlePlayer: 'Мои тренировки',
@@ -181,11 +183,14 @@ const enPatch: Record<string, unknown> = {
     enableCoach: 'Become a coach',
   },
   auth: {
-    openInTelegram: 'Sign in with Telegram',
-    miniAppHint: 'Your bot will open the Mini App in Telegram — you will be signed in there.',
-    missingBotUrl:
-      'Set VITE_TELEGRAM_BOT_APP_URL in apps/web/.env to your Mini App direct link (from @BotFather).',
     retryLogin: 'Try again',
+    miniAppHint:
+      'Mini App login did not complete. Tap retry or reopen the app from Telegram.',
+    webLoginIntro:
+      'Sign in with the official Telegram widget below. Register this site domain with /setdomain (see docs/14-onboarding-setup.md).',
+    widgetLegal: 'Telegram handles sign-in; we only receive verified profile data.',
+    missingBotUsername:
+      'Set VITE_TELEGRAM_BOT_USERNAME in apps/web/.env (bot username without @).',
   },
   common: {
     save: 'Save',
@@ -202,7 +207,7 @@ const enPatch: Record<string, unknown> = {
     open: 'Open',
     comingSoon: 'More features coming soon.',
     devNoTelegram:
-      'Open the app in Telegram or set VITE_DEV_ACCESS_TOKEN for local development.',
+      'For debugging without the widget you may set VITE_DEV_ACCESS_TOKEN (JWT) in apps/web/.env — development only.',
   },
   home: {
     titlePlayer: 'My trainings',

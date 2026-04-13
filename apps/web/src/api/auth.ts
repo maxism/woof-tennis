@@ -12,9 +12,30 @@ export interface TelegramAuthResponse {
   user: User;
 }
 
+/** Тело `POST /auth/telegram/widget` — те же ключи, что у Login Widget (docs/03-api-spec.md). */
+export interface TelegramWidgetAuthPayload {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+}
+
 export async function loginWithTelegram(initData: string): Promise<TelegramAuthResponse> {
   const { data } = await publicClient.post<TelegramAuthResponse>('/auth/telegram', {
     initData,
   });
+  return data;
+}
+
+export async function loginWithTelegramWidget(
+  payload: TelegramWidgetAuthPayload,
+): Promise<TelegramAuthResponse> {
+  const { data } = await publicClient.post<TelegramAuthResponse>(
+    '/auth/telegram/widget',
+    payload,
+  );
   return data;
 }

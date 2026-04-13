@@ -60,7 +60,7 @@
 **Куда вписать URL приложения:**
 
 - `TELEGRAM_MINI_APP_URL` (корневой `.env`) — тот же базовый URL, что в BotFather для Mini App (без лишнего слэша в конце), например `https://app.example.com`
-- Для локальной разработки фронта см. `apps/web/.env.example` — там `VITE_TELEGRAM_BOT_APP_URL` для кнопки «открыть в Telegram» из браузера (формат `https://t.me/YourBot/shortname`)
+- Для **веб-входа в браузере** (Login Widget) см. `apps/web/.env.example` — переменная `VITE_TELEGRAM_BOT_USERNAME` (имя бота **без** `@`). Домен страницы с виджетом должен быть зарегистрирован через `/setdomain` у @BotFather (см. раздел про виджет в этом документе).
 
 ## 3. Файлы окружения: куда что класть
 
@@ -92,7 +92,7 @@
 | --------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `VITE_API_URL`          | Базовый URL API **без** `/api/v1` на конце. Локально с Vite proxy часто оставляют пустым `VITE_API_URL=` |
 | `VITE_UI_LOCALE`            | `ru` или `en`                                                                                            |
-| `VITE_TELEGRAM_BOT_APP_URL` | Ссылка на Mini App в TG: `https://t.me/YourBot/shortname`                                                |
+| `VITE_TELEGRAM_BOT_USERNAME` | Имя бота без `@` для [Login Widget](https://core.telegram.org/widgets/login) на сайте; домен — через `/setdomain` |
 
 
 При **сборке** фронта для продакшена задайте `VITE_API_URL=https://ваш-домен` (тот же хост, с которого доступен API, например через тот же Nginx).

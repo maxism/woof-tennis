@@ -41,6 +41,11 @@ export function getTelegramInitData(): string {
   return window.Telegram?.WebApp?.initData ?? '';
 }
 
+/** Документ 15 §5.2: канал Mini App — непустой initData (WebApp / SDK). */
+export function isTelegramMiniApp(): boolean {
+  return getTelegramInitData().trim().length > 0;
+}
+
 export function getStartParam(): string | undefined {
   return window.Telegram?.WebApp?.initDataUnsafe?.start_param;
 }

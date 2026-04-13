@@ -36,7 +36,7 @@ apps/web/
     ├── App.tsx                     # Root: providers, router
     ├── api/                        # API layer
     │   ├── client.ts               # Axios instance с JWT interceptor
-    │   ├── auth.ts                 # POST /auth/telegram
+    │   ├── auth.ts                 # POST /auth/telegram (Mini App), /auth/telegram/widget (веб)
     │   ├── users.ts                # Users API calls
     │   ├── locations.ts            # Locations API calls
     │   ├── schedule-templates.ts   # Schedule Templates API calls
@@ -84,6 +84,8 @@ apps/web/
     │   └── Notifications/
     │       └── NotificationsPage.tsx
     ├── components/                 # Переиспользуемые компоненты
+    │   ├── auth/
+    │   │   └── TelegramLoginWidget.tsx  # Login Widget (веб-канал)
     │   ├── ui/                     # Базовый UI-кит
     │   │   ├── Button.tsx
     │   │   ├── Card.tsx
@@ -206,16 +208,21 @@ apps/web/
 ### Auth Store (Zustand)
 
 ```typescript
-import type { User } from '@wooftennis/shared';
+import type { UserWithStats } from '@wooftennis/shared';
+import type { TelegramWidgetAuthPayload } from './api/auth';
 
 interface AuthState {
   token: string | null;
-  user: User | null;
+  user: UserWithStats | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  authError: string | null;
   login: (initData: string) => Promise<void>;
+  loginWithWidget: (payload: TelegramWidgetAuthPayload) => Promise<void>;
+  setSession: (token: string, user: UserWithStats) => void;
   logout: () => void;
-  updateUser: (data: Partial<User>) => void;
+  updateUser: (data: Partial<UserWithStats>) => void;
+  setLoading: (v: boolean) => void;
 }
 ```
 
@@ -264,6 +271,20 @@ apiClient.interceptors.response.use(
   }
 );
 ```
+
+## Двухканальная авторизация (Mini App и веб)
+
+Целевая модель зафиксирована в `docs/15-auth-dual-channel-architecture.md` и `docs/03-api-spec.md`: один пользователь (`telegramId`), один JWT, два способа установить сессию.
+
+| Канал | Условие на фронте | Запрос | Компоненты / хелперы |
+|-------|-------------------|--------|----------------------|
+| **Mini App** | `isTelegramMiniApp()` === true (непустой `initData`) | `POST /auth/telegram` `{ initData }` | `getTelegramInitData()`, `useBootstrapAuth` → `authStore.login` |
+| **Веб (браузер)** | нет `initData` | `POST /auth/telegram/widget` — тело с полями Login Widget **как есть** (snake_case) | `TelegramLoginWidget`, `authStore.loginWithWidget` |
+
+- Хелпер **`isTelegramMiniApp()`** — `apps/web/src/utils/telegram.ts` (наличие непустой строки `initData` от WebApp/SDK).
+- Экран без сессии: в Mini App — «Повторить вход» при сбое; в браузере — **только** встроенный Login Widget (без редиректа на `t.me` как замены логина на сайте).
+- JWT после обоих каналов хранится в **`authStore`** (persist в `localStorage` для веба; при желании Mini App можно дополнить CloudStorage — см. `docs/07-telegram-integration.md`).
+- Переменные окружения фронта: `VITE_TELEGRAM_BOT_USERNAME` (имя бота для виджета, без `@`); опционально `VITE_DEV_ACCESS_TOKEN` только для внутренней отладки, не для пользовательского UI.
 
 ## Интеграция с Telegram Mini App
 
