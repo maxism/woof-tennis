@@ -4,6 +4,8 @@
 
 - `COMMON.md` — общий контракт для всех
 - `PM-COORDINATOR.md` — project/product manager-координатор
+- `TASKS-FORMAT.md` — стандарт постановки задач ролям в Markdown
+- `ISSUES-TRACKER.md` — стандарт учета OPEN/CLOSED проблем
 - `FE-DEV.md` — фронтенд агент
 - `BE-DEV.md` — бэкенд агент
 - `ARCHITECT.md` — архитектор
@@ -17,6 +19,9 @@
 1) Прочитать общий файл: `.agents/COMMON.md`
 2) Прочитать профиль роли: `.agents/<ROLE>.md`
 3) Выполнить задачу строго по этим правилам
+
+Для постановок ролям использовать `.agents/tasks/*.md` по формату из `.agents/TASKS-FORMAT.md`.
+Учет проблем вести в `.agents/issues/ISSUES.md` по правилам `.agents/ISSUES-TRACKER.md`.
 
 ## Готовые шаблоны промптов
 
