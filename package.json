@@ -1,0 +1,25 @@
+{
+  "name": "wooftennis",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "dev:api": "turbo dev --filter=@wooftennis/api",
+    "dev:web": "turbo dev --filter=@wooftennis/web",
+    "build:api": "turbo build --filter=@wooftennis/api",
+    "build:web": "turbo build --filter=@wooftennis/web",
+    "db:migration:generate": "npm run migration:generate --workspace=@wooftennis/api",
+    "db:migration:run": "npm run migration:run --workspace=@wooftennis/api",
+    "db:migration:revert": "npm run migration:revert --workspace=@wooftennis/api"
+  },
+  "devDependencies": {
+    "turbo": "^2",
+    "typescript": "^5"
+  }
+}

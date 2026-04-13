@@ -1,0 +1,155 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { UserEntity } from './entities/user.entity';
+import { TelegramUser } from '../../common/utils/telegram-auth.util';
+import { UpdateUserDto } from './dto/update-user.dto';
+
+@Injectable()
+export class UsersService {
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
+  ) {}
+
+  async findById(id: string): Promise<UserEntity | null> {
+    return this.userRepo.findOne({ where: { id } });
+  }
+
+  async findByTelegramId(telegramId: number): Promise<UserEntity | null> {
+    return this.userRepo.findOne({ where: { telegramId } });
+  }
+
+  async upsertFromTelegram(tgUser: TelegramUser): Promise<UserEntity> {
+    let user = await this.findByTelegramId(tgUser.id);
+
+    if (user) {
+      user.firstName = tgUser.first_name;
+      user.lastName = tgUser.last_name || null;
+      user.username = tgUser.username || null;
+      user.photoUrl = tgUser.photo_url || null;
+      return this.userRepo.save(user);
+    }
+
+    const newUser = this.userRepo.create({
+      telegramId: tgUser.id,
+      firstName: tgUser.first_name,
+      lastName: tgUser.last_name || null,
+      username: tgUser.username || null,
+      photoUrl: tgUser.photo_url || null,
+    });
+    return this.userRepo.save(newUser);
+  }
+
+  async updateProfile(
+    userId: string,
+    dto: UpdateUserDto,
+  ): Promise<UserEntity> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('Пользователь не найден');
+    Object.assign(user, dto);
+    return this.userRepo.save(user);
+  }
+
+  async getMyProfile(userId: string) {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    const stats = await this.getUserStats(userId, user.isCoach);
+    return { ...user, stats };
+  }
+
+  async getPublicProfile(userId: string) {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    const { telegramId, updatedAt, ...publicData } = user;
+
+    if (user.isCoach) {
+      const stats = await this.getCoachPublicStats(userId);
+      return { ...publicData, stats };
+    }
+
+    return publicData;
+  }
+
+  private async getUserStats(userId: string, isCoach: boolean) {
+    const qb = this.userRepo.manager;
+
+    const totalBookingsAsPlayer = await qb
+      .createQueryBuilder()
+      .select('COUNT(*)')
+      .from('bookings', 'b')
+      .where('b."playerId" = :userId', { userId })
+      .getRawOne()
+      .then((r) => parseInt(r?.count || '0', 10));
+
+    let totalBookingsAsCoach = 0;
+    if (isCoach) {
+      totalBookingsAsCoach = await qb
+        .createQueryBuilder()
+        .select('COUNT(*)')
+        .from('bookings', 'b')
+        .innerJoin('slots', 's', 's.id = b."slotId"')
+        .where('s."coachId" = :userId', { userId })
+        .getRawOne()
+        .then((r) => parseInt(r?.count || '0', 10));
+    }
+
+    const avgStarRatingAsPlayer = await qb
+      .createQueryBuilder()
+      .select('AVG(r."starRating")', 'avg')
+      .from('reviews', 'r')
+      .where('r."targetId" = :userId', { userId })
+      .getRawOne()
+      .then((r) => (r?.avg ? parseFloat(r.avg) : null));
+
+    const avgStarRatingAsCoach = isCoach ? avgStarRatingAsPlayer : null;
+
+    const pendingMakeupDebts = await qb
+      .createQueryBuilder()
+      .select('COUNT(*)')
+      .from('makeup_debts', 'm')
+      .where('m."playerId" = :userId AND m.status = :status', {
+        userId,
+        status: 'pending',
+      })
+      .getRawOne()
+      .then((r) => parseInt(r?.count || '0', 10));
+
+    return {
+      totalBookingsAsPlayer,
+      totalBookingsAsCoach,
+      avgStarRatingAsPlayer,
+      avgStarRatingAsCoach,
+      pendingMakeupDebts,
+    };
+  }
+
+  private async getCoachPublicStats(userId: string) {
+    const qb = this.userRepo.manager;
+
+    const totalStudents = await qb
+      .createQueryBuilder()
+      .select('COUNT(DISTINCT b."playerId")', 'count')
+      .from('bookings', 'b')
+      .innerJoin('slots', 's', 's.id = b."slotId"')
+      .where('s."coachId" = :userId', { userId })
+      .getRawOne()
+      .then((r) => parseInt(r?.count || '0', 10));
+
+    const reviewStats = await qb
+      .createQueryBuilder()
+      .select('AVG(r."starRating")', 'avg')
+      .addSelect('COUNT(*)', 'count')
+      .from('reviews', 'r')
+      .where('r."targetId" = :userId', { userId })
+      .getRawOne();
+
+    return {
+      totalStudents,
+      avgStarRating: reviewStats?.avg ? parseFloat(reviewStats.avg) : null,
+      totalReviews: parseInt(reviewStats?.count || '0', 10),
+    };
+  }
+}
