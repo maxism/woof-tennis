@@ -22,6 +22,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
   children: ReactNode;
+  /** Если задано, рендерится как ссылка (для «Войти через Telegram» и т.п.). */
+  href?: string;
 }
 
 export function Button({
@@ -29,12 +31,23 @@ export function Button({
   size = 'md',
   className = '',
   children,
+  href,
   ...rest
 }: ButtonProps) {
+  const cls = `inline-flex items-center justify-center font-medium transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-woof-accent focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--woof-bg)] disabled:pointer-events-none ${variantClass[variant]} ${sizeClass[size]} ${className}`;
+
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+        {children}
+      </a>
+    );
+  }
+
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center font-medium transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-woof-accent focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--woof-bg)] disabled:pointer-events-none ${variantClass[variant]} ${sizeClass[size]} ${className}`}
+      className={cls}
       {...rest}
     >
       {children}

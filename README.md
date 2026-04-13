@@ -16,6 +16,8 @@ Telegram Mini App для букинга теннисных тренировок 
 - [09 — Roadmap](docs/09-roadmap.md)
 - [10 — Структура монорепозитория](docs/10-monorepo-structure.md)
 - [13 — Этапы сборки проекта](docs/13-build-stages.md)
+- [14 — С чего начать: настройка и Telegram](docs/14-onboarding-setup.md)
+- [15 — Авторизация: веб (Login Widget) + Mini App — ревью и задания](docs/15-auth-dual-channel-architecture.md)
 
 ### Дизайн и задачи
 - [11 — Дизайн-артефакты](docs/11-design-artifacts.md)
@@ -30,7 +32,8 @@ Telegram Mini App для букинга теннисных тренировок 
 
 ## Следующий шаг
 
-После согласования документации можно переходить к реализации кода по задачам из `docs/12-frontend-tasks.md` и аналогичному бэкенд-плану.
+- **Уже есть код:** пошаговая настройка окружения, токенов и BotFather — [docs/14-onboarding-setup.md](docs/14-onboarding-setup.md).
+- **Планирование фронта:** `docs/12-frontend-tasks.md` и аналогичный план бэкенда.
 
 ## Сборка в двух командах
 

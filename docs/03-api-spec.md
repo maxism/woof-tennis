@@ -2,7 +2,7 @@
 
 **Base URL:** `/api/v1`
 
-Все эндпоинты (кроме `/auth/telegram`) требуют JWT-токен в заголовке:
+Все эндпоинты (кроме публичных `POST /auth/telegram` и планируемого `POST /auth/telegram/widget`) требуют JWT-токен в заголовке:
 
 ```
 Authorization: Bearer <jwt_token>
@@ -51,6 +51,26 @@ Authorization: Bearer <jwt_token>
 
 **Errors:**
 - `401` — невалидная подпись initData
+
+### POST `/auth/telegram/widget` *(план, см. [15](15-auth-dual-channel-architecture.md))*
+
+Авторизация через [Telegram Login Widget](https://core.telegram.org/widgets/login) в обычном браузере. Набор полей и проверка подписи **отличаются** от Mini App `initData`; на бэкенде — отдельный валидатор по [оф. инструкции](https://core.telegram.org/widgets/login#checking-authorization).
+
+**Request Body** (уточнить при реализации — все поля, которые возвращает виджет в колбэке, включая `hash`, `auth_date`, `id`, …):
+
+```json
+{
+  "id": 123456789,
+  "first_name": "Иван",
+  "auth_date": 1713000000,
+  "hash": "..."
+}
+```
+
+**Response 200:** тот же формат, что у `POST /auth/telegram` (`accessToken`, `user`).
+
+**Errors:**
+- `401` — невалидная подпись или просроченный `auth_date`
 
 ---
 

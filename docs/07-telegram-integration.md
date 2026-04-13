@@ -1,5 +1,16 @@
 # WoofTennis — Интеграция с Telegram
 
+## Целевая авторизация: два канала
+
+Продуктовая цель:
+
+1. **Сайт в браузере** — кнопка «Войти через Telegram» через [Login Widget](https://core.telegram.org/widgets/login) (отдельная проверка `hash` на сервере).
+2. **Mini App** — бесшовный вход через [Web App `initData`](https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app).
+
+Текущие разделы ниже в основном описывают **Mini App + бот + `initData`**. Ревью разрыва с целевой моделью, алгоритмы и **задания для фронта/бэка** — в [15-auth-dual-channel-architecture.md](15-auth-dual-channel-architecture.md).
+
+---
+
 ## Обзор компонентов
 
 ```mermaid

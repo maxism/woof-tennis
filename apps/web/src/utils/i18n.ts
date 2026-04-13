@@ -39,6 +39,14 @@ const ru = {
     asCoach: 'Как тренер',
     enableCoach: 'Стать тренером',
   },
+  auth: {
+    openInTelegram: 'Войти через Telegram',
+    miniAppHint:
+      'Откроется бот с Mini App в Telegram — там вы автоматически войдёте в аккаунт.',
+    missingBotUrl:
+      'Укажите в apps/web/.env ссылку на Mini App, например: VITE_TELEGRAM_BOT_APP_URL=https://t.me/ИмяБота/short_name (short name из @BotFather → Bot Settings → Configure Mini App).',
+    retryLogin: 'Повторить вход',
+  },
   booking: {
     book: 'Забронировать',
     cancel: 'Отменить',
@@ -139,7 +147,7 @@ const ru = {
     open: 'Открыть',
     comingSoon: 'Скоро здесь будет больше возможностей.',
     devNoTelegram:
-      'Откройте приложение в Telegram или задайте VITE_DEV_ACCESS_TOKEN для локальной разработки.',
+      'В обычном браузере нет данных Telegram — нажмите кнопку ниже или задайте VITE_DEV_ACCESS_TOKEN (JWT с бэкенда).',
   },
   home: {
     titlePlayer: 'Мои тренировки',
@@ -171,6 +179,13 @@ const enPatch: Record<string, unknown> = {
     asPlayer: 'As player',
     asCoach: 'As coach',
     enableCoach: 'Become a coach',
+  },
+  auth: {
+    openInTelegram: 'Sign in with Telegram',
+    miniAppHint: 'Your bot will open the Mini App in Telegram — you will be signed in there.',
+    missingBotUrl:
+      'Set VITE_TELEGRAM_BOT_APP_URL in apps/web/.env to your Mini App direct link (from @BotFather).',
+    retryLogin: 'Try again',
   },
   common: {
     save: 'Save',

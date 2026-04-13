@@ -105,6 +105,13 @@ graph TB
 
 ### Поток данных
 
+**Целевая модель авторизации** (два канала, один пользователь и один JWT) — см. [15 — ревью и задания](15-auth-dual-channel-architecture.md):
+
+- **Mini App:** бесшовный вход через `initData` (как ниже).
+- **Веб-сайт в браузере:** вход через [Telegram Login Widget](https://core.telegram.org/widgets/login) и отдельную серверную проверку подписи (не смешивать с алгоритмом `initData`).
+
+**Mini App (описанный в текущей реализации):**
+
 1. Пользователь открывает Mini App внутри Telegram.
 2. Telegram передаёт `initData` в Mini App (подписанные данные пользователя).
 3. Mini App отправляет `initData` на бэкенд для валидации.
@@ -117,8 +124,11 @@ graph TB
 ```mermaid
 graph LR
     subgraph auth [Авторизация]
-        A1[Валидация TG initData]
+        A1[Валидация initData Mini App]
+        A1b[Валидация Login Widget — план]
         A2[JWT-сессии]
+        A1 --> A2
+        A1b --> A2
     end
 
     subgraph coach [Тренер]

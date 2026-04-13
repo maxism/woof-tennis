@@ -1,23 +1,24 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
       // Bundle from source so string enums resolve in ESM (dist is CommonJS).
-      '@wooftennis/shared': fileURLToPath(
-        new URL('../../packages/shared/src/index.ts', import.meta.url),
+      "@wooftennis/shared": fileURLToPath(
+        new URL("../../packages/shared/src/index.ts", import.meta.url),
       ),
     },
   },
   server: {
     port: 5173,
+    allowedHosts: ["alannah-hyperdemocratic-orpha.ngrok-free.dev"],
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
+      "/api": {
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
     },
