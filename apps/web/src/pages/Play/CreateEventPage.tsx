@@ -6,12 +6,13 @@ import { createLocation, fetchMyLocations } from '@/api/locations';
 import { searchUsersByUsername } from '@/api/users';
 import { InviteLinkShare } from '@/components/play/InviteLinkShare';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ROUTES } from '@/utils/constants';
 import { getApiErrorCode, getApiErrorMessage } from '@/utils/apiError';
 import { t } from '@/utils/i18n';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type CreateState =
   | { kind: 'idle' }
@@ -19,8 +20,74 @@ type CreateState =
   | { kind: 'invite-success'; inviteLink: string }
   | { kind: 'time-conflict' };
 
+// ─── Section wrapper ──────────────────────────────────────────────────────────
+
+function Section({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-woof-border bg-tg-secondary-bg px-4 py-3">
+      <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-tg-hint">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+// ─── Tag chip (invite targets) ────────────────────────────────────────────────
+
+function TagChip({
+  value,
+  onRemove,
+}: {
+  value: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="flex items-center gap-1 rounded-full border border-woof-border bg-tg-bg px-3 py-1 text-sm text-tg-text">
+      @{value}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="ml-0.5 leading-none text-tg-hint hover:text-woof-danger"
+        aria-label={`Удалить @${value}`}
+      >
+        ×
+      </button>
+    </span>
+  );
+}
+
+// ─── Terminal screens ─────────────────────────────────────────────────────────
+
+function TerminalCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title={title} />
+      <div className="rounded-2xl border border-woof-border bg-tg-secondary-bg px-4 py-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export function CreateEventPage() {
   const qc = useQueryClient();
+
+  // Form state
   const [locationId, setLocationId] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
@@ -28,12 +95,18 @@ export function CreateEventPage() {
   const [playerUsername, setPlayerUsername] = useState('');
   const [inviteTargetInput, setInviteTargetInput] = useState('');
   const [inviteTargets, setInviteTargets] = useState<string[]>([]);
+
+  // Inline location creation
   const [showCreateLocation, setShowCreateLocation] = useState(false);
-  const [newLocationName, setNewLocationName] = useState('');
-  const [newLocationAddress, setNewLocationAddress] = useState('');
-  const [newLocationDescription, setNewLocationDescription] = useState('');
-  const [newLocationWebsite, setNewLocationWebsite] = useState('');
+  const [newLocName, setNewLocName] = useState('');
+  const [newLocAddress, setNewLocAddress] = useState('');
+  const [newLocDescription, setNewLocDescription] = useState('');
+  const [newLocWebsite, setNewLocWebsite] = useState('');
+
+  // Result state
   const [createState, setCreateState] = useState<CreateState>({ kind: 'idle' });
+
+  // ── Data fetching ────────────────────────────────────────────────────────
 
   const locationsQuery = useQuery({
     queryKey: ['locations', 'mine', 'active'],
@@ -41,51 +114,67 @@ export function CreateEventPage() {
     staleTime: 300_000,
   });
 
-  const normalizedPlayerUsername = playerUsername.trim().replace(/^@/, '').toLowerCase();
+  const normalizedUsername = playerUsername.trim().replace(/^@/, '').toLowerCase();
+
   const playerSuggestionsQuery = useQuery({
-    queryKey: ['users', 'search', normalizedPlayerUsername],
-    queryFn: () => searchUsersByUsername(normalizedPlayerUsername),
-    enabled: normalizedPlayerUsername.length >= 2,
+    queryKey: ['users', 'search', normalizedUsername],
+    queryFn: () => searchUsersByUsername(normalizedUsername),
+    enabled: normalizedUsername.length >= 2,
     staleTime: 60_000,
   });
-  const resolvedAttachPlayerId = useMemo(() => {
-    return playerSuggestionsQuery.data?.find(
-      (candidate) => candidate.username?.toLowerCase() === normalizedPlayerUsername,
-    )?.id;
-  }, [normalizedPlayerUsername, playerSuggestionsQuery.data]);
+
+  const resolvedPlayerId = useMemo(
+    () =>
+      playerSuggestionsQuery.data?.find(
+        (c) => c.username?.toLowerCase() === normalizedUsername,
+      )?.id,
+    [normalizedUsername, playerSuggestionsQuery.data],
+  );
+
+  // ── Mutations ────────────────────────────────────────────────────────────
 
   const createEventMutation = useMutation({
     mutationFn: createEvent,
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['events', 'my'] });
-    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['events', 'my'] }),
   });
 
   const createLocationMutation = useMutation({
     mutationFn: createLocation,
-    onSuccess: (location) => {
-      setLocationId(location.id);
+    onSuccess: (loc) => {
+      setLocationId(loc.id);
       setShowCreateLocation(false);
-      setNewLocationName('');
-      setNewLocationAddress('');
-      setNewLocationDescription('');
-      setNewLocationWebsite('');
+      setNewLocName('');
+      setNewLocAddress('');
+      setNewLocDescription('');
+      setNewLocWebsite('');
       void qc.invalidateQueries({ queryKey: ['locations', 'mine'] });
     },
   });
 
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  const toIso = (v: string) => new Date(v).toISOString();
+
   const addInviteTarget = (value: string) => {
-    const normalized = value.trim().replace(/^@/, '').toLowerCase();
-    if (!normalized) return;
-    if (inviteTargets.includes(normalized)) return;
-    setInviteTargets((prev) => [...prev, normalized]);
+    const n = value.trim().replace(/^@/, '').toLowerCase();
+    if (!n || inviteTargets.includes(n)) return;
+    setInviteTargets((prev) => [...prev, n]);
     setInviteTargetInput('');
   };
 
-  const toIso = (value: string) => new Date(value).toISOString();
+  const handleStartsAtChange = (value: string) => {
+    setStartsAt(value);
+    if (!value) return;
+    const end = new Date(value);
+    end.setHours(end.getHours() + 1);
+    const endLocal = end.toISOString().slice(0, 16);
+    if (!endsAt || new Date(endsAt) <= new Date(value)) setEndsAt(endLocal);
+  };
+
+  // ── Actions ──────────────────────────────────────────────────────────────
 
   const handleAttach = async () => {
-    if (!resolvedAttachPlayerId) return;
+    if (!resolvedPlayerId) return;
     try {
       const event = await createEventMutation.mutateAsync({
         locationId,
@@ -94,11 +183,10 @@ export function CreateEventPage() {
         recurrence: null,
         isRecurring,
       });
-      const attached = await attachPlayer(event.id, resolvedAttachPlayerId);
-      setCreateState({ kind: 'attach-success', eventId: attached.id });
-    } catch (error) {
-      const code = getApiErrorCode(error);
-      if (code === 'EVENT_TIME_CONFLICT') {
+      await attachPlayer(event.id, resolvedPlayerId);
+      setCreateState({ kind: 'attach-success', eventId: event.id });
+    } catch (err) {
+      if (getApiErrorCode(err) === 'EVENT_TIME_CONFLICT') {
         setCreateState({ kind: 'time-conflict' });
       }
     }
@@ -115,33 +203,36 @@ export function CreateEventPage() {
         isRecurring,
       });
       const invite = await createInvite(event.id, { targets: inviteTargets });
-      const inviteLink = `${window.location.origin}${ROUTES.invite(invite.code)}`;
-      setCreateState({ kind: 'invite-success', inviteLink });
-    } catch (error) {
-      const code = getApiErrorCode(error);
-      if (code === 'EVENT_TIME_CONFLICT') {
+      setCreateState({
+        kind: 'invite-success',
+        inviteLink: `${window.location.origin}${ROUTES.invite(invite.code)}`,
+      });
+    } catch (err) {
+      if (getApiErrorCode(err) === 'EVENT_TIME_CONFLICT') {
         setCreateState({ kind: 'time-conflict' });
       }
     }
   };
 
+  // ── Terminal screens ─────────────────────────────────────────────────────
+
   if (createState.kind === 'attach-success') {
     return (
-      <Card>
-        <p className="text-base font-semibold text-tg-text">{t('event', 'attachSuccess')}</p>
+      <TerminalCard title={t('event', 'attachSuccess')}>
+        <p className="mb-4 text-sm text-tg-hint">
+          Игрок получит уведомление в Telegram.
+        </p>
         <Link to={ROUTES.home}>
-          <Button className="mt-3 w-full">{t('event', 'attachCta')}</Button>
+          <Button className="w-full">{t('event', 'attachCta')}</Button>
         </Link>
-      </Card>
+      </TerminalCard>
     );
   }
 
   if (createState.kind === 'invite-success') {
     return (
       <div className="flex flex-col gap-3">
-        <Card>
-          <p className="text-base font-semibold text-tg-text">{t('event', 'inviteSuccess')}</p>
-        </Card>
+        <PageHeader title={t('event', 'inviteSuccess')} />
         <InviteLinkShare inviteLink={createState.inviteLink} />
       </div>
     );
@@ -149,150 +240,222 @@ export function CreateEventPage() {
 
   if (createState.kind === 'time-conflict') {
     return (
-      <Card>
-        <p className="text-base font-semibold text-tg-text">{t('event', 'timeConflict')}</p>
-        <Button className="mt-3 w-full" onClick={() => setCreateState({ kind: 'idle' })}>
+      <TerminalCard title={t('event', 'timeConflict')}>
+        <Button className="w-full" onClick={() => setCreateState({ kind: 'idle' })}>
           {t('event', 'timeConflictCta')}
         </Button>
-      </Card>
+      </TerminalCard>
     );
   }
 
+  // ── Form ─────────────────────────────────────────────────────────────────
+
+  const isPending = createEventMutation.isPending || createLocationMutation.isPending;
+  const canAttach = Boolean(locationId && startsAt && endsAt && resolvedPlayerId);
+  const canInvite = Boolean(locationId && startsAt && endsAt && inviteTargets.length);
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <PageHeader title={t('event', 'createTitle')} />
-      <div className="flex flex-col gap-2">
-        <label className="text-sm text-tg-hint">{t('event', 'locationId')}</label>
+
+      {/* ── Когда ── */}
+      <Section label="Когда">
+        <div className="flex flex-col gap-2">
+          <Input
+            type="datetime-local"
+            label={t('event', 'startsAt')}
+            value={startsAt}
+            onChange={(e) => handleStartsAtChange(e.target.value)}
+          />
+          <Input
+            type="datetime-local"
+            label={t('event', 'endsAt')}
+            value={endsAt}
+            onChange={(e) => setEndsAt(e.target.value)}
+          />
+          <label className="flex cursor-pointer items-center gap-2 pt-1 text-sm text-tg-text">
+            <input
+              type="checkbox"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              className="h-4 w-4 accent-woof-accent"
+            />
+            {t('event', 'recurring')}
+          </label>
+        </div>
+      </Section>
+
+      {/* ── Где ── */}
+      <Section label="Где">
         <select
           value={locationId}
-          onChange={(e) => setLocationId(e.target.value)}
-          className="min-h-11 rounded-xl border border-woof-border bg-tg-bg px-3 text-tg-text"
+          onChange={(e) => {
+            if (e.target.value === '__new__') {
+              setShowCreateLocation(true);
+            } else {
+              setLocationId(e.target.value);
+              setShowCreateLocation(false);
+            }
+          }}
+          className="w-full min-h-11 rounded-xl border border-woof-border bg-tg-bg px-3 text-sm text-tg-text focus:outline-none focus:ring-2 focus:ring-woof-accent/40"
         >
-          <option value="">{t('common', 'empty')}</option>
-          {locationsQuery.data?.map((location) => (
-            <option key={location.id} value={location.id}>
-              {location.name} - {location.address}
+          <option value="">Выберите локацию</option>
+          {locationsQuery.data?.map((loc) => (
+            <option key={loc.id} value={loc.id}>
+              {loc.name}
             </option>
           ))}
+          <option value="__new__">+ {t('event', 'createLocation')}</option>
         </select>
-        <Button variant="secondary" size="sm" onClick={() => setShowCreateLocation((prev) => !prev)}>
-          {t('event', 'createLocation')}
-        </Button>
-      </div>
 
-      {showCreateLocation ? (
-        <Card>
-          <div className="flex flex-col gap-2">
-            <Input label={t('location', 'name')} value={newLocationName} onChange={(e) => setNewLocationName(e.target.value)} />
-            <Input label={t('location', 'address')} value={newLocationAddress} onChange={(e) => setNewLocationAddress(e.target.value)} />
+        {showCreateLocation ? (
+          <div className="mt-3 flex flex-col gap-2 border-t border-woof-border pt-3">
+            <Input
+              label={t('location', 'name')}
+              value={newLocName}
+              onChange={(e) => setNewLocName(e.target.value)}
+            />
+            <Input
+              label={t('location', 'address')}
+              value={newLocAddress}
+              onChange={(e) => setNewLocAddress(e.target.value)}
+            />
             <Input
               label={t('location', 'description')}
-              value={newLocationDescription}
-              onChange={(e) => setNewLocationDescription(e.target.value)}
+              value={newLocDescription}
+              onChange={(e) => setNewLocDescription(e.target.value)}
             />
-            <Input label={t('location', 'website')} value={newLocationWebsite} onChange={(e) => setNewLocationWebsite(e.target.value)} />
+            <Input
+              label={t('location', 'website')}
+              value={newLocWebsite}
+              onChange={(e) => setNewLocWebsite(e.target.value)}
+            />
             <Button
               variant="secondary"
+              disabled={!newLocName.trim() || !newLocAddress.trim() || isPending}
               onClick={() =>
                 createLocationMutation.mutate({
-                  name: newLocationName.trim(),
-                  address: newLocationAddress.trim(),
-                  description: newLocationDescription.trim(),
-                  website: newLocationWebsite.trim(),
+                  name: newLocName.trim(),
+                  address: newLocAddress.trim(),
+                  description: newLocDescription.trim(),
+                  website: newLocWebsite.trim(),
                 })
               }
-              disabled={!newLocationName.trim() || !newLocationAddress.trim() || createLocationMutation.isPending}
             >
               {t('location', 'save')}
             </Button>
           </div>
-        </Card>
-      ) : null}
+        ) : null}
+      </Section>
 
-      <Input
-        type="datetime-local"
-        label={t('event', 'startsAt')}
-        value={startsAt}
-        onChange={(e) => {
-          const nextStart = e.target.value;
-          setStartsAt(nextStart);
-          if (!nextStart) return;
-          const nextEndDate = new Date(nextStart);
-          nextEndDate.setHours(nextEndDate.getHours() + 1);
-          const nextEndLocal = nextEndDate.toISOString().slice(0, 16);
-          if (!endsAt || new Date(endsAt).getTime() <= new Date(nextStart).getTime()) {
-            setEndsAt(nextEndLocal);
-          }
-        }}
-      />
-      <Input type="datetime-local" label={t('event', 'endsAt')} value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
-      <label className="flex items-center gap-2 text-sm text-tg-text">
-        <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} />
-        {t('event', 'recurring')}
-      </label>
+      {/* ── Участник ── */}
+      <Section label="Участник">
+        {/* Direct attach via username */}
+        <div className="flex flex-col gap-2">
+          <Input
+            label={t('event', 'playerUsername')}
+            value={playerUsername}
+            onChange={(e) => setPlayerUsername(e.target.value)}
+            placeholder="@username"
+          />
 
-      <Input
-        label={t('event', 'playerUsername')}
-        value={playerUsername}
-        onChange={(e) => setPlayerUsername(e.target.value)}
-        placeholder="@username"
-      />
-      {playerSuggestionsQuery.data?.length ? (
-        <div className="rounded-xl border border-woof-border bg-tg-secondary-bg p-2 text-sm text-tg-text">
-          {playerSuggestionsQuery.data.map((candidate) => (
-            <button
-              key={candidate.id}
-              type="button"
-              className="block w-full rounded-lg px-2 py-1 text-left hover:bg-woof-secondary-bg"
-              onClick={() => setPlayerUsername(candidate.username ? `@${candidate.username}` : '')}
-            >
-              {(candidate.firstName || '').trim()} {candidate.lastName ?? ''} ({candidate.username ? `@${candidate.username}` : candidate.id})
-            </button>
-          ))}
+          {/* Autocomplete suggestions */}
+          {playerSuggestionsQuery.data?.length ? (
+            <div className="rounded-xl border border-woof-border bg-tg-bg">
+              {playerSuggestionsQuery.data.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-tg-text hover:bg-tg-secondary-bg"
+                  onClick={() =>
+                    setPlayerUsername(c.username ? `@${c.username}` : '')
+                  }
+                >
+                  <span className="font-medium">
+                    {[c.firstName, c.lastName].filter(Boolean).join(' ')}
+                  </span>
+                  {c.username ? (
+                    <span className="text-xs text-tg-hint">@{c.username}</span>
+                  ) : null}
+                  {resolvedPlayerId === c.id ? (
+                    <span className="ml-auto text-xs font-semibold text-woof-accent">
+                      ✓
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
-      ) : null}
 
-      <div className="flex flex-col gap-2">
-        <Input
-          label={t('event', 'inviteTargets')}
-          value={inviteTargetInput}
-          onChange={(e) => setInviteTargetInput(e.target.value)}
-          placeholder="@username"
-        />
-        <Button variant="secondary" size="sm" onClick={() => addInviteTarget(inviteTargetInput)}>
-          {t('event', 'addTarget')}
-        </Button>
-        {inviteTargets.length ? (
-          <div className="flex flex-wrap gap-2">
-            {inviteTargets.map((target) => (
-              <button
-                key={target}
-                type="button"
-                className="rounded-full border border-woof-border px-3 py-1 text-sm text-tg-text"
-                onClick={() => setInviteTargets((prev) => prev.filter((item) => item !== target))}
-                title="Удалить"
-              >
-                @{target} ×
-              </button>
-            ))}
+        {/* Divider */}
+        <div className="my-3 flex items-center gap-2">
+          <div className="flex-1 border-t border-woof-border" />
+          <span className="text-xs text-tg-hint">или пригласить по ссылке</span>
+          <div className="flex-1 border-t border-woof-border" />
+        </div>
+
+        {/* Invite targets */}
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Input
+              label={t('event', 'inviteTargets')}
+              value={inviteTargetInput}
+              onChange={(e) => setInviteTargetInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault();
+                  addInviteTarget(inviteTargetInput);
+                }
+              }}
+              placeholder="@username"
+              className="flex-1"
+            />
+            <button
+              type="button"
+              onClick={() => addInviteTarget(inviteTargetInput)}
+              disabled={!inviteTargetInput.trim()}
+              className="mt-5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-woof-border bg-tg-bg text-lg text-tg-hint disabled:opacity-40"
+              aria-label={t('event', 'addTarget')}
+            >
+              +
+            </button>
           </div>
-        ) : (
-          <p className="text-sm text-tg-hint">{t('event', 'noInviteTargets')}</p>
-        )}
+
+          {inviteTargets.length ? (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {inviteTargets.map((target) => (
+                <TagChip
+                  key={target}
+                  value={target}
+                  onRemove={() =>
+                    setInviteTargets((prev) => prev.filter((x) => x !== target))
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-tg-hint">{t('event', 'noInviteTargets')}</p>
+          )}
+        </div>
+      </Section>
+
+      {/* ── Actions ── */}
+      <div className="flex flex-col gap-2">
+        <Button disabled={!canAttach || isPending} onClick={handleAttach}>
+          {t('event', 'actionAttach')}
+        </Button>
+        <Button
+          variant="secondary"
+          disabled={!canInvite || isPending}
+          onClick={handleInvite}
+        >
+          {t('event', 'actionInvite')}
+        </Button>
       </div>
 
-      <Button disabled={!locationId || !startsAt || !endsAt || !resolvedAttachPlayerId} onClick={handleAttach}>
-        {t('event', 'actionAttach')}
-      </Button>
-      <Button
-        variant="secondary"
-        disabled={!locationId || !startsAt || !endsAt || !inviteTargets.length}
-        onClick={handleInvite}
-      >
-        {t('event', 'actionInvite')}
-      </Button>
       {createEventMutation.isError ? (
-        <p className="text-sm text-woof-danger">
+        <p className="rounded-xl border border-woof-danger/30 bg-woof-danger/10 px-3 py-2 text-sm text-woof-danger">
           {getApiErrorMessage(createEventMutation.error, t('common', 'retry'))}
         </p>
       ) : null}

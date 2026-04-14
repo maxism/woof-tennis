@@ -20,6 +20,7 @@ type EventDto = {
   coachId: string;
   playerId: string | null;
   locationId: string;
+  locationName?: string;
   startsAt: string;
   endsAt: string;
   status: EventStatus;
@@ -424,6 +425,7 @@ export class EventsFacadeService {
       coachId: slot.coachId,
       playerId: resolvedBooking?.playerId ?? resolvedInvite?.playerId ?? null,
       locationId: slot.locationId,
+      locationName: slot.location?.name,
       startsAt: this.toIsoDateTime(slot.date, slot.startTime),
       endsAt: this.toIsoDateTime(slot.date, slot.endTime),
       status: forcedStatus ?? this.resolveStatus(slot, resolvedBooking, resolvedInvite),

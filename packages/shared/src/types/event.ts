@@ -5,6 +5,7 @@ export interface EventItem {
   coachId: string;
   playerId: string | null;
   locationId: string;
+  locationName?: string;
   startsAt: string;
   endsAt: string;
   status: EventStatus;

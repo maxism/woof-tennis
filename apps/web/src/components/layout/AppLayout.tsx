@@ -22,13 +22,10 @@ export function AppLayout() {
   const initData = getTelegramInitData();
   const miniApp = isTelegramMiniApp();
 
-  // Явные правила скрытия: не прячем TabBar на /play/new и /play/:inviteCode.
   const hideTabBar =
     location.pathname.startsWith('/review/') ||
     location.pathname.includes('/edit') ||
-    location.pathname === '/coach/locations/new' ||
-    location.pathname === '/coach/schedule/template/new' ||
-    location.pathname === '/coach/schedule/slot/new';
+    location.pathname === '/coach/locations/new';
 
   if (isLoading) {
     return (
@@ -84,7 +81,8 @@ export function AppLayout() {
   }
 
   return (
-    <div className="mx-auto min-h-dvh max-w-lg pb-24 pt-safe">
+    // pb-32 = 128px: tab bar ~56px + FAB overhang ~28px + breathing room
+    <div className="mx-auto min-h-dvh max-w-lg pb-32 pt-safe">
       <main className="px-4 pt-4">
         <Outlet />
       </main>

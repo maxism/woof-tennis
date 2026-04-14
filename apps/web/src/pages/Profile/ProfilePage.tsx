@@ -83,9 +83,6 @@ export function ProfilePage() {
           <Link to={ROUTES.coach.locations}>
             <Button variant="secondary" className="w-full">{t('nav', 'locations')}</Button>
           </Link>
-          <Link to={ROUTES.coach.schedule}>
-            <Button variant="secondary" className="w-full">{t('nav', 'schedule')}</Button>
-          </Link>
         </div>
       </Card>
       <Card className="mt-4">

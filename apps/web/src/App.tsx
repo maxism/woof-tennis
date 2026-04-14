@@ -4,20 +4,9 @@ import { HomePage } from '@/pages/Home/HomePage';
 import { ProfilePage } from '@/pages/Profile/ProfilePage';
 import { NotificationsPage } from '@/pages/Notifications/NotificationsPage';
 import { InviteAcceptPage } from '@/pages/Player/InviteAcceptPage';
-import { SearchPage } from '@/pages/Player/SearchPage';
-import { CoachProfilePage } from '@/pages/Player/CoachProfilePage';
-import { BookingDetailPage } from '@/pages/Player/BookingDetailPage';
 import { LocationsPage } from '@/pages/Coach/LocationsPage';
 import { LocationFormPage } from '@/pages/Coach/LocationFormPage';
-import { SchedulePage } from '@/pages/Coach/SchedulePage';
-import { TemplateFormPage } from '@/pages/Coach/TemplateFormPage';
-import { SlotDetailPage } from '@/pages/Coach/SlotDetailPage';
-import { ManualSlotPage } from '@/pages/Coach/ManualSlotPage';
-import { NewSessionPage } from '@/pages/Play/NewSessionPage';
 import { CreateEventPage } from '@/pages/Play/CreateEventPage';
-import { JoinSessionPage } from '@/pages/Play/JoinSessionPage';
-import { MySessionsPage } from '@/pages/Play/MySessionsPage';
-import { ReviewFormPage } from '@/pages/Reviews/ReviewFormPage';
 import { useBootstrapAuth } from '@/hooks/useBootstrapAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -64,13 +53,6 @@ function AuthShell({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function PlayerRoute({ children }: { children: React.ReactNode }) {
-  const isCoach = useAuthStore((s) => Boolean(s.user?.isCoach));
-  const activeRole = useUIStore((s) => s.activeRole);
-  if (isCoach && activeRole === 'coach') return <Navigate to="/" replace />;
-  return <>{children}</>;
-}
-
 function CoachRoute({ children }: { children: React.ReactNode }) {
   const isCoach = useAuthStore((s) => Boolean(s.user?.isCoach));
   const activeRole = useUIStore((s) => s.activeRole);
@@ -114,93 +96,9 @@ export default function App() {
                 </CoachRoute>
               }
             />
-            <Route
-              path="coach/schedule"
-              element={
-                <CoachRoute>
-                  <SchedulePage />
-                </CoachRoute>
-              }
-            />
-            <Route
-              path="coach/schedule/template/new"
-              element={
-                <CoachRoute>
-                  <TemplateFormPage />
-                </CoachRoute>
-              }
-            />
-            <Route
-              path="coach/schedule/template/:id/edit"
-              element={
-                <CoachRoute>
-                  <TemplateFormPage />
-                </CoachRoute>
-              }
-            />
-            <Route
-              path="coach/schedule/slot/new"
-              element={
-                <CoachRoute>
-                  <ManualSlotPage />
-                </CoachRoute>
-              }
-            />
-            <Route
-              path="coach/slot/:id"
-              element={
-                <CoachRoute>
-                  <SlotDetailPage />
-                </CoachRoute>
-              }
-            />
 
-            <Route
-              path="player/search"
-              element={
-                <PlayerRoute>
-                  <SearchPage />
-                </PlayerRoute>
-              }
-            />
-            <Route
-              path="player/coach/:id"
-              element={
-                <PlayerRoute>
-                  <CoachProfilePage />
-                </PlayerRoute>
-              }
-            />
-            <Route
-              path="player/booking/:id"
-              element={
-                <PlayerRoute>
-                  <BookingDetailPage />
-                </PlayerRoute>
-              }
-            />
-
-            <Route
-              path="play/mine"
-              element={
-                <PlayerRoute>
-                  <MySessionsPage />
-                </PlayerRoute>
-              }
-            />
-            <Route
-              path="play/new"
-              element={
-                <PlayerRoute>
-                  <NewSessionPage />
-                </PlayerRoute>
-              }
-            />
             <Route path="play/create" element={<CreateEventPage />} />
-            <Route path="play/:inviteCode" element={<JoinSessionPage />} />
             <Route path="player/invite/:code" element={<InviteAcceptPage />} />
-
-            <Route path="review/:bookingId" element={<ReviewFormPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
