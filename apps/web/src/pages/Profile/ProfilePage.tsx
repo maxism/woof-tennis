@@ -6,11 +6,13 @@ import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { updateMe } from '@/api/users';
+import { useUIStore } from '@/stores/uiStore';
 import { t } from '@/utils/i18n';
 
 export function ProfilePage() {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
+  const setActiveRole = useUIStore((s) => s.setActiveRole);
   const qc = useQueryClient();
 
   const toggleCoach = useMutation({
@@ -19,6 +21,7 @@ export function ProfilePage() {
       const cur = useAuthStore.getState().user;
       if (!cur) return;
       updateUser({ ...cur, ...u, stats: cur.stats });
+      setActiveRole(u.isCoach ? 'coach' : 'player');
       void qc.invalidateQueries();
       toast.success(t('common', 'save'));
     },

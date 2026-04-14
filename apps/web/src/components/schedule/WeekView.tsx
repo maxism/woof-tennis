@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { format, parseISO } from 'date-fns';
+import { addDays, format, parseISO, startOfWeek } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { SlotPublic } from '@wooftennis/shared';
 import { DayColumn } from './DayColumn';
@@ -19,7 +19,10 @@ export function WeekView({ slots }: { slots: SlotPublic[] }) {
     return map;
   }, [slots]);
 
-  const keys = useMemo(() => [...byDay.keys()].sort(), [byDay]);
+  const keys = useMemo(() => {
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return Array.from({ length: 7 }, (_, i) => format(addDays(weekStart, i), 'yyyy-MM-dd'));
+  }, []);
 
   return (
     <div>

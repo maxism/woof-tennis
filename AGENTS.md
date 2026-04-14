@@ -13,6 +13,7 @@
    - Architect: `.agents/ARCHITECT.md`
    - Designer: `.agents/DESIGNER.md`
    - QA: `.agents/QA.md`
+   - DevOps (если выделена роль): `.agents/DEVOPS-DEV.md`
 
 ## Обязательные правила для всех агентов
 - Работать только в рамках своей роли и скоупа задачи.

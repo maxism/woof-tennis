@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { apiClient } from './client';
 import { API_V1_BASE } from './baseUrl';
-import type { CoachPublicProfile, User, UserWithStats } from '@wooftennis/shared';
+import type { CoachPublicProfile, User, UserPublic, UserWithStats } from '@wooftennis/shared';
 
 export async function fetchMeWithToken(token: string): Promise<UserWithStats> {
   const { data } = await axios.get<UserWithStats>(`${API_V1_BASE}/users/me`, {
@@ -22,5 +22,12 @@ export async function updateMe(body: { isCoach?: boolean }): Promise<User> {
 
 export async function fetchCoachPublic(id: string): Promise<CoachPublicProfile> {
   const { data } = await apiClient.get<CoachPublicProfile>(`/users/${id}/public`);
+  return data;
+}
+
+export async function searchUsersByUsername(username: string): Promise<UserPublic[]> {
+  const { data } = await apiClient.get<UserPublic[]>('/users/search', {
+    params: { username },
+  });
   return data;
 }

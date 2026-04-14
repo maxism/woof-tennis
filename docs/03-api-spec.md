@@ -184,6 +184,33 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
+### GET `/users/search`
+
+Поиск пользователя по Telegram username (nickname).  
+Основной user-facing сценарий: фронт передаёт nickname, а не UUID.
+
+**Query params:**
+- `username` (string, required) — можно с `@` или без (`@ivan_tennis` / `ivan_tennis`)
+
+**Response 200:**
+
+```json
+[
+  {
+    "id": "uuid",
+    "firstName": "Иван",
+    "lastName": "Петров",
+    "username": "ivan_tennis",
+    "photoUrl": "https://...",
+    "isCoach": false
+  }
+]
+```
+
+**Поведение:**
+- если username не найден/скрыт у пользователя — возвращается пустой массив `[]`;
+- в выдаче только публичные поля (без `telegramId` и внутренних данных).
+
 ---
 
 ## 3. Locations `[Coach]`

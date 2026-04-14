@@ -18,6 +18,7 @@ export const ROUTES = {
     booking: (id: string) => `/player/booking/${id}`,
   },
   play: {
+    mine: '/play/mine',
     new: '/play/new',
     join: (code: string) => `/play/${code}`,
   },

@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { fetchPlaySessionByInvite, joinPlaySession } from '@/api/play-sessions';
@@ -13,6 +13,7 @@ import { hapticLight } from '@/utils/telegram';
 import { ParticipantStatus } from '@wooftennis/shared';
 
 export function JoinSessionPage() {
+  const navigate = useNavigate();
   const { inviteCode } = useParams<{ inviteCode: string }>();
   const qc = useQueryClient();
 
@@ -28,6 +29,8 @@ export function JoinSessionPage() {
       hapticLight();
       toast.success(t('playSession', 'join'));
       void qc.invalidateQueries({ queryKey: ['play-session'] });
+      void qc.invalidateQueries({ queryKey: ['play-sessions', 'my'] });
+      void qc.invalidateQueries({ queryKey: ['bookings', 'my'] });
       void q.refetch();
     },
     onError: (err: unknown) => {
@@ -47,9 +50,38 @@ export function JoinSessionPage() {
     },
   });
 
+  if (!inviteCode) {
+    return (
+      <EmptyState
+        title={t('error', 'notFound')}
+        description={t('playSession', 'inviteText')}
+        action={
+          <Button variant="secondary" className="mt-3" onClick={() => navigate('/')}>
+            {t('common', 'back')}
+          </Button>
+        }
+      />
+    );
+  }
+
   if (q.isLoading) return <Spinner />;
   if (q.isError || !q.data) {
-    return <EmptyState description={t('error', 'notFound')} />;
+    return (
+      <EmptyState
+        title={t('error', 'notFound')}
+        description={t('common', 'retry')}
+        action={
+          <div className="mt-3 flex gap-2">
+            <Button variant="secondary" onClick={() => void q.refetch()}>
+              {t('common', 'retry')}
+            </Button>
+            <Button variant="ghost" onClick={() => navigate('/')}>
+              {t('common', 'back')}
+            </Button>
+          </div>
+        }
+      />
+    );
   }
 
   const s = q.data;

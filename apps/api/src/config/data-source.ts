@@ -1,7 +1,9 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
-import * as dotenv from 'dotenv';
+import { loadRootEnv, validateRequiredEnv } from './load-root-env';
 
-dotenv.config();
+/** CLI миграций не импортирует main.ts — загружаем тот же корневой `.env` и fail-fast. */
+loadRootEnv();
+validateRequiredEnv();
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',

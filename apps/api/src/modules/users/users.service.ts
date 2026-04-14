@@ -73,6 +73,38 @@ export class UsersService {
     return publicData;
   }
 
+  async searchPublicByUsername(rawUsername: string) {
+    const normalized = rawUsername.trim().replace(/^@/, '').toLowerCase();
+    if (!normalized) {
+      return [];
+    }
+
+    const users = await this.userRepo
+      .createQueryBuilder('u')
+      .select([
+        'u.id',
+        'u.firstName',
+        'u.lastName',
+        'u.username',
+        'u.photoUrl',
+        'u.isCoach',
+      ])
+      .where('u.username IS NOT NULL')
+      .andWhere("u.username <> ''")
+      .andWhere('LOWER(u.username) = :username', { username: normalized })
+      .limit(5)
+      .getMany();
+
+    return users.map((u) => ({
+      id: u.id,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      username: u.username,
+      photoUrl: u.photoUrl,
+      isCoach: u.isCoach,
+    }));
+  }
+
   private async getUserStats(userId: string, isCoach: boolean) {
     const qb = this.userRepo.manager;
 

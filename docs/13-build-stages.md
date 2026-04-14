@@ -175,7 +175,13 @@ VITE_API_URL=https://wooftennis.com npx turbo build --filter=@wooftennis/web
 - миграции применяются (`npm run db:migration:run`)
 - `docker compose build api` успешен
 - `docker compose up -d` поднимает стек
-- `GET /health` возвращает `status: ok`
+- `GET /health` возвращает `status: ok` (liveness)
+- `GET /health/ready` возвращает **200** только если PostgreSQL доступен и **нет неприменённых миграций**; иначе **503** с `reason` в теле (`pending_migrations`, `database_unavailable`, …). Используйте для readiness в оркестраторе / перед приёмом трафика.
+
+### Ручная проверка readiness
+
+1. Поднять только БД, **не** применять миграции, запустить API с корректным `.env` → `GET /health/ready` должен ответить **503** (`pending_migrations`).
+2. Выполнить `npm run migration:run --workspace=@wooftennis/api` → тот же endpoint должен стать **200** (`status: ready`).
 
 ## 11) Частые проблемы
 

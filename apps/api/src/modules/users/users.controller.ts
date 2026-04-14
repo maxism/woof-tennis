@@ -4,6 +4,7 @@ import {
   Patch,
   Param,
   Body,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -11,6 +12,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { SearchUserByUsernameDto } from './dto/search-user-by-username.dto';
 import { UserEntity } from './entities/user.entity';
 
 @Controller('users')
@@ -29,6 +31,11 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ) {
     return this.usersService.updateProfile(user.id, dto);
+  }
+
+  @Get('search')
+  searchByUsername(@Query() query: SearchUserByUsernameDto) {
+    return this.usersService.searchPublicByUsername(query.username);
   }
 
   @Get(':id/public')

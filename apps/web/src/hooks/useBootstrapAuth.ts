@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { getTelegramInitData, isTelegramMiniApp } from '@/utils/telegram';
 import { fetchMeWithToken } from '@/api/users';
+import { AUTH_ENDPOINTS } from '@/auth/authEndpoints';
 
 async function bootstrapAuth(): Promise<void> {
-  const { login, setSession, logout, setLoading, token } = useAuthStore.getState();
+  const { login, setSession, applyAuthFailure, setLoading, token } =
+    useAuthStore.getState();
 
   /** Внутренняя отладка (docs/15 §7 — в UI не рекламируем). */
   const dev = import.meta.env.VITE_DEV_ACCESS_TOKEN;
@@ -13,8 +15,8 @@ async function bootstrapAuth(): Promise<void> {
     try {
       const me = await fetchMeWithToken(t);
       setSession(t, me);
-    } catch {
-      logout();
+    } catch (e: unknown) {
+      applyAuthFailure(e, AUTH_ENDPOINTS.me);
     }
     setLoading(false);
     return;
@@ -30,8 +32,8 @@ async function bootstrapAuth(): Promise<void> {
     try {
       const me = await fetchMeWithToken(token);
       setSession(token, me);
-    } catch {
-      logout();
+    } catch (e: unknown) {
+      applyAuthFailure(e, AUTH_ENDPOINTS.me);
     }
   }
 

@@ -1,6 +1,4 @@
-import axios from 'axios';
 import { apiClient } from './client';
-import { API_V1_BASE } from './baseUrl';
 import type { PlaySession, PlaySessionDetailed } from '@wooftennis/shared';
 import type { PaginatedResponse } from '@wooftennis/shared';
 
@@ -21,8 +19,8 @@ export async function createPlaySession(body: CreatePlaySessionBody): Promise<Pl
 export async function fetchPlaySessionByInvite(
   inviteCode: string,
 ): Promise<PlaySessionDetailed> {
-  const { data } = await axios.get<PlaySessionDetailed>(
-    `${API_V1_BASE}/play-sessions/by-invite/${inviteCode}`,
+  const { data } = await apiClient.get<PlaySessionDetailed>(
+    `/play-sessions/by-invite/${inviteCode}`,
   );
   return data;
 }

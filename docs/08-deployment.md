@@ -227,14 +227,29 @@ server {
 
 ### .env.example (корень монорепозитория)
 
+Source of truth для API и TypeORM CLI: **только корневой** `.env`.
+`apps/api/.env` не требуется. В CI допускается не иметь файла `.env`, если те же ключи переданы переменными окружения процесса.
+
+**Обязательные ключи fail-fast (API + migration CLI):**
+- `TELEGRAM_BOT_TOKEN`
+- `JWT_SECRET`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `DB_DATABASE`
+
 ```bash
 # ======== Database ========
+DB_HOST=localhost
+DB_PORT=5432
 DB_DATABASE=wooftennis
 DB_USERNAME=wooftennis
 DB_PASSWORD=CHANGE_ME_strong_password
 
 # ======== JWT ========
 JWT_SECRET=CHANGE_ME_random_32_char_string
+JWT_EXPIRES_IN=7d
 
 # ======== Telegram ========
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
@@ -245,6 +260,15 @@ TELEGRAM_MINI_APP_URL=https://wooftennis.com
 # ======== Frontend (build time) ========
 VITE_API_URL=https://wooftennis.com
 ```
+
+### Правила `DB_HOST` / `DB_PORT` по средам
+
+| Среда | DB_HOST | DB_PORT |
+|---|---|---|
+| Local host run (API на хосте) | `localhost` | `5432` (или локальный override) |
+| Docker compose run (`api` service) | `postgres` | `5432` |
+
+Если порт PostgreSQL переопределён локально, меняется только `DB_PORT`; правило выбора `DB_HOST` остаётся тем же.
 
 ## Процедура деплоя
 

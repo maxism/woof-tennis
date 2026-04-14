@@ -564,6 +564,7 @@ JWT_EXPIRES_IN=7d
 # Telegram
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF
 TELEGRAM_WEBHOOK_URL=https://api.wooftennis.com/bot/webhook
+TELEGRAM_WEBHOOK_SECRET=CHANGE_ME_random_string
 TELEGRAM_MINI_APP_URL=https://wooftennis.com
 
 # App
@@ -571,3 +572,18 @@ PORT=3000
 NODE_ENV=development
 UPLOAD_DIR=./uploads
 ```
+
+Source of truth для API/миграций: корневой `.env` монорепозитория (`apps/api/.env` не обязателен).
+
+Обязательные ключи fail-fast:
+- `TELEGRAM_BOT_TOKEN`
+- `JWT_SECRET`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `DB_DATABASE`
+
+Правила `DB_HOST` / `DB_PORT`:
+- local host run: `DB_HOST=localhost`, `DB_PORT=5432` (или локальный override);
+- docker compose run (сервис `api`): `DB_HOST=postgres`, `DB_PORT=5432`.

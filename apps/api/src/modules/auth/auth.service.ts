@@ -1,4 +1,9 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserEntity } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
@@ -8,6 +13,7 @@ import {
 } from '../../common/utils/telegram-auth.util';
 import { validateTelegramLoginWidget } from '../../common/utils/telegram-login-widget.util';
 import { TelegramWidgetAuthDto } from './dto/telegram-widget-auth.dto';
+import { AuthFailureCode } from './auth-failure-codes';
 
 @Injectable()
 export class AuthService {
@@ -18,8 +24,22 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) {}
 
-  private logAuthFailure(reason: string): void {
-    this.logger.warn(`Telegram auth failed: ${reason}`);
+  private logAuthEvent(payload: {
+    channel: 'mini_app' | 'widget';
+    requestId?: string;
+    outcome: 'failure' | 'success';
+    code?: AuthFailureCode;
+    stage?: string;
+  }): void {
+    const line = JSON.stringify({
+      event: 'auth',
+      ...payload,
+    });
+    if (payload.outcome === 'failure') {
+      this.logger.warn(line);
+    } else {
+      this.logger.log(line);
+    }
   }
 
   private issueSession(user: UserEntity) {
@@ -31,27 +51,59 @@ export class AuthService {
     return { accessToken, user };
   }
 
-  async authenticateTelegram(initData: string) {
+  async authenticateTelegram(initData: string, requestId?: string) {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
-      this.logAuthFailure('bot_token_not_configured');
+      this.logAuthEvent({
+        channel: 'mini_app',
+        requestId,
+        outcome: 'failure',
+        code: AuthFailureCode.ENV_MISSING,
+        stage: 'resolve_bot_token',
+      });
       throw new UnauthorizedException('Bot token не настроен');
     }
 
     const telegramUser = validateTelegramInitData(initData, botToken);
     if (!telegramUser) {
-      this.logAuthFailure('mini_app_invalid_signature_or_stale');
+      this.logAuthEvent({
+        channel: 'mini_app',
+        requestId,
+        outcome: 'failure',
+        code: AuthFailureCode.MINI_APP_INVALID,
+        stage: 'validate_init_data',
+      });
       throw new UnauthorizedException('Невалидная подпись initData');
     }
 
-    const user = await this.usersService.upsertFromTelegram(telegramUser);
-    return this.issueSession(user);
+    try {
+      const user = await this.usersService.upsertFromTelegram(telegramUser);
+      return this.issueSession(user);
+    } catch (err) {
+      this.logAuthEvent({
+        channel: 'mini_app',
+        requestId,
+        outcome: 'failure',
+        code: AuthFailureCode.DB_UPSERT_FAILED,
+        stage: 'upsert_user',
+      });
+      throw new InternalServerErrorException('Не удалось сохранить пользователя');
+    }
   }
 
-  async authenticateTelegramWidget(dto: TelegramWidgetAuthDto) {
+  async authenticateTelegramWidget(
+    dto: TelegramWidgetAuthDto,
+    requestId?: string,
+  ) {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
-      this.logAuthFailure('bot_token_not_configured');
+      this.logAuthEvent({
+        channel: 'widget',
+        requestId,
+        outcome: 'failure',
+        code: AuthFailureCode.ENV_MISSING,
+        stage: 'resolve_bot_token',
+      });
       throw new UnauthorizedException('Bot token не настроен');
     }
 
@@ -71,11 +123,28 @@ export class AuthService {
       TELEGRAM_AUTH_MAX_AGE_SEC,
     );
     if (!telegramUser) {
-      this.logAuthFailure('widget_invalid_signature_or_stale');
+      this.logAuthEvent({
+        channel: 'widget',
+        requestId,
+        outcome: 'failure',
+        code: AuthFailureCode.WIDGET_SIGNATURE_INVALID,
+        stage: 'validate_widget_hash',
+      });
       throw new UnauthorizedException('Невалидная подпись виджета');
     }
 
-    const user = await this.usersService.upsertFromTelegram(telegramUser);
-    return this.issueSession(user);
+    try {
+      const user = await this.usersService.upsertFromTelegram(telegramUser);
+      return this.issueSession(user);
+    } catch {
+      this.logAuthEvent({
+        channel: 'widget',
+        requestId,
+        outcome: 'failure',
+        code: AuthFailureCode.DB_UPSERT_FAILED,
+        stage: 'upsert_user',
+      });
+      throw new InternalServerErrorException('Не удалось сохранить пользователя');
+    }
   }
 }

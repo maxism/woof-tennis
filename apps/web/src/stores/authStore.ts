@@ -7,7 +7,9 @@ import {
   type TelegramWidgetAuthPayload,
 } from '@/api/auth';
 import { fetchMeWithToken } from '@/api/users';
-import { getApiErrorMessage } from '@/utils/apiError';
+import { AUTH_ENDPOINTS } from '@/auth/authEndpoints';
+import type { AuthFailureKind } from '@/auth/authFailureKind';
+import { buildAuthFailureState } from '@/auth/buildAuthFailureState';
 
 interface AuthState {
   token: string | null;
@@ -15,9 +17,12 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   authError: string | null;
+  authFailureKind: AuthFailureKind | null;
+  authRequestId: string | null;
   login: (initData: string) => Promise<void>;
   loginWithWidget: (payload: TelegramWidgetAuthPayload) => Promise<void>;
   setSession: (token: string, user: UserWithStats) => void;
+  applyAuthFailure: (error: unknown, endpoint: string) => void;
   logout: () => void;
   updateUser: (data: Partial<UserWithStats>) => void;
   setLoading: (v: boolean) => void;
@@ -31,6 +36,19 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: true,
       authError: null,
+      authFailureKind: null,
+      authRequestId: null,
+
+      applyAuthFailure: (error, endpoint) => {
+        const f = buildAuthFailureState(error, endpoint);
+        set({
+          token: null,
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          ...f,
+        });
+      },
 
       setSession: (token, user) => {
         set({
@@ -39,52 +57,64 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
           isLoading: false,
           authError: null,
+          authFailureKind: null,
+          authRequestId: null,
         });
       },
 
       login: async (initData: string) => {
-        set({ isLoading: true, authError: null });
+        set({
+          isLoading: true,
+          authError: null,
+          authFailureKind: null,
+          authRequestId: null,
+        });
         try {
           const { accessToken } = await loginWithTelegram(initData);
-          const me = await fetchMeWithToken(accessToken);
-          set({
-            token: accessToken,
-            user: me,
-            isAuthenticated: true,
-            isLoading: false,
-            authError: null,
-          });
+          try {
+            const me = await fetchMeWithToken(accessToken);
+            set({
+              token: accessToken,
+              user: me,
+              isAuthenticated: true,
+              isLoading: false,
+              authError: null,
+              authFailureKind: null,
+              authRequestId: null,
+            });
+          } catch (e: unknown) {
+            get().applyAuthFailure(e, AUTH_ENDPOINTS.me);
+          }
         } catch (e: unknown) {
-          set({
-            token: null,
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            authError: getApiErrorMessage(e, 'Auth failed'),
-          });
+          get().applyAuthFailure(e, AUTH_ENDPOINTS.miniApp);
         }
       },
 
       loginWithWidget: async (payload: TelegramWidgetAuthPayload) => {
-        set({ isLoading: true, authError: null });
+        set({
+          isLoading: true,
+          authError: null,
+          authFailureKind: null,
+          authRequestId: null,
+        });
         try {
           const { accessToken } = await loginWithTelegramWidget(payload);
-          const me = await fetchMeWithToken(accessToken);
-          set({
-            token: accessToken,
-            user: me,
-            isAuthenticated: true,
-            isLoading: false,
-            authError: null,
-          });
+          try {
+            const me = await fetchMeWithToken(accessToken);
+            set({
+              token: accessToken,
+              user: me,
+              isAuthenticated: true,
+              isLoading: false,
+              authError: null,
+              authFailureKind: null,
+              authRequestId: null,
+            });
+          } catch (e: unknown) {
+            get().applyAuthFailure(e, AUTH_ENDPOINTS.me);
+          }
         } catch (e: unknown) {
-          set({
-            token: null,
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            authError: getApiErrorMessage(e, 'Auth failed'),
-          });
+          get().applyAuthFailure(e, AUTH_ENDPOINTS.widget);
         }
       },
 
@@ -95,6 +125,8 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           isLoading: false,
           authError: null,
+          authFailureKind: null,
+          authRequestId: null,
         });
       },
 

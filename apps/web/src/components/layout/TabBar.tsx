@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import { useUIStore } from '@/stores/uiStore';
 import { ROUTES } from '@/utils/constants';
 import { t } from '@/utils/i18n';
 
@@ -109,11 +110,12 @@ type Item = { to: string; label: string; Icon: (p: { active: boolean }) => JSX.E
 
 export function TabBar() {
   const isCoach = useAuthStore((s) => s.user?.isCoach);
+  const activeRole = useUIStore((s) => s.activeRole);
 
   const playerItems: Item[] = [
     { to: ROUTES.home, label: t('nav', 'myTrainings'), Icon: IconCalendar },
     { to: ROUTES.player.search, label: t('nav', 'coaches'), Icon: IconSearch },
-    { to: ROUTES.play.new, label: t('nav', 'play'), Icon: IconTennis },
+    { to: ROUTES.play.mine, label: t('nav', 'play'), Icon: IconTennis },
     { to: ROUTES.notifications, label: t('nav', 'notifications'), Icon: IconBell },
     { to: ROUTES.profile, label: t('nav', 'profile'), Icon: IconUser },
   ];
@@ -126,7 +128,7 @@ export function TabBar() {
     { to: ROUTES.profile, label: t('nav', 'profile'), Icon: IconUser },
   ];
 
-  const items = isCoach ? coachItems : playerItems;
+  const items = isCoach && activeRole === 'coach' ? coachItems : playerItems;
 
   return (
     <nav className="safe-pb fixed bottom-0 left-0 right-0 z-40 border-t border-woof-border bg-tg-bg/95 backdrop-blur-md">

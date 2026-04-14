@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { TabBar } from './TabBar';
 import { useAuthStore } from '@/stores/authStore';
@@ -13,16 +14,21 @@ export function AppLayout() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authError = useAuthStore((s) => s.authError);
+  const authRequestId = useAuthStore((s) => s.authRequestId);
   const login = useAuthStore((s) => s.login);
+  const [widgetRemount, setWidgetRemount] = useState(0);
 
   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME?.trim();
   const initData = getTelegramInitData();
   const miniApp = isTelegramMiniApp();
 
+  // Явные правила скрытия: не прячем TabBar на /play/new и /play/:inviteCode.
   const hideTabBar =
     location.pathname.startsWith('/review/') ||
     location.pathname.includes('/edit') ||
-    location.pathname.includes('/new');
+    location.pathname === '/coach/locations/new' ||
+    location.pathname === '/coach/schedule/template/new' ||
+    location.pathname === '/coach/schedule/slot/new';
 
   if (isLoading) {
     return (
@@ -36,7 +42,7 @@ export function AppLayout() {
     return (
       <div className="mx-auto max-w-lg px-4 pt-8">
         <EmptyState
-          title={t('error', 'unauthorized')}
+          title={authError ? t('error', 'authFailedTitle') : t('error', 'unauthorized')}
           description={miniApp ? t('auth', 'miniAppHint') : t('auth', 'webLoginIntro')}
         />
         {authError ? (
@@ -44,15 +50,30 @@ export function AppLayout() {
             {authError}
           </p>
         ) : null}
+        {import.meta.env.DEV && authRequestId ? (
+          <p className="mt-2 text-center font-mono text-[10px] text-tg-hint">
+            requestId: {authRequestId}
+          </p>
+        ) : null}
         <div className="mt-6 flex flex-col gap-3">
-          {miniApp && initData ? (
+          {authError && miniApp && initData ? (
             <Button variant="primary" size="lg" className="w-full" onClick={() => void login(initData)}>
-              {t('auth', 'retryLogin')}
+              {t('auth', 'retryAction')}
+            </Button>
+          ) : null}
+          {authError && !miniApp && botUsername ? (
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full"
+              onClick={() => setWidgetRemount((k) => k + 1)}
+            >
+              {t('auth', 'retryAction')}
             </Button>
           ) : null}
           {!miniApp ? (
             botUsername ? (
-              <TelegramLoginWidget botUsername={botUsername} />
+              <TelegramLoginWidget key={widgetRemount} botUsername={botUsername} />
             ) : (
               <p className="text-center text-xs text-tg-hint">{t('auth', 'missingBotUsername')}</p>
             )

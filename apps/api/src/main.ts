@@ -1,13 +1,23 @@
+import './config/api-bootstrap';
+import { randomUUID } from 'crypto';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const id = randomUUID();
+    req.requestId = id;
+    res.setHeader('X-Request-Id', id);
+    next();
+  });
+
   app.setGlobalPrefix('api/v1', {
-    exclude: ['health', 'bot/webhook'],
+    exclude: ['health', 'health/ready', 'bot/webhook'],
   });
 
   app.useGlobalPipes(

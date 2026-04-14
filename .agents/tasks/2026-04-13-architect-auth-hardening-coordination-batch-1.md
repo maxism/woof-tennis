@@ -57,3 +57,6 @@
 - Как проверить
 - Риски/долг
 - Предложение по статусу issue-ID (WT-007)
+
+## Updates
+- 2026-04-14: Если Architect уже отдал handoff — зафиксированное решение см. в `.agents/tasks/2026-04-13-architect-env-loading-strategy.md` (`## Updates`). Дальнейшая работа — BE + QA + PM по правилам в `.agents/PM-COORDINATOR.md` и `.agents/issues/ISSUES.md`.

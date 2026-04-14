@@ -41,6 +41,7 @@ const ru = {
   },
   auth: {
     retryLogin: 'Повторить вход',
+    retryAction: 'Повторить',
     miniAppHint:
       'Вход из Mini App не выполнен автоматически. Нажмите «Повторить вход» или откройте приложение заново из Telegram.',
     webLoginIntro:
@@ -131,6 +132,14 @@ const ru = {
     timeConflict: 'Конфликт по времени с другой тренировкой',
     coachRequired: 'Требуется доступ тренера',
     unauthorized: 'Необходима авторизация',
+    authFailedTitle: 'Не удалось войти',
+    authUnauthorized:
+      'Не удалось подтвердить вход. Откройте приложение из Telegram или выполните вход через виджет.',
+    authRateLimited: 'Слишком много попыток входа. Подождите немного и попробуйте снова.',
+    authServer: 'Сервер временно недоступен. Повторите попытку позже.',
+    authNetwork: 'Нет соединения с сервером. Проверьте интернет и попробуйте снова.',
+    authClient: 'Запрос отклонён. Повторите вход.',
+    authUnknown: 'Не удалось выполнить вход. Попробуйте ещё раз.',
     notFound: 'Не найдено',
     sessionFull: 'Все места заняты',
   },
@@ -164,6 +173,12 @@ const ru = {
   search: {
     title: 'Тренеры',
     empty: 'Каталог тренеров появится позже. Пока можно открыть профиль по UUID.',
+    usernameLabel: 'Поиск по Telegram username',
+    usernamePlaceholder: '@username',
+    searchError: 'Не удалось выполнить поиск. Попробуйте снова.',
+    notFound: 'Тренер с таким username не найден',
+    notFoundHelp: 'Проверьте написание и попробуйте снова.',
+    openCoach: 'Открыть профиль',
   },
 };
 
@@ -184,6 +199,7 @@ const enPatch: Record<string, unknown> = {
   },
   auth: {
     retryLogin: 'Try again',
+    retryAction: 'Retry',
     miniAppHint:
       'Mini App login did not complete. Tap retry or reopen the app from Telegram.',
     webLoginIntro:
@@ -222,6 +238,22 @@ const enPatch: Record<string, unknown> = {
   search: {
     title: 'Coaches',
     empty: 'Coach directory is coming soon. You can open a profile by UUID for now.',
+    usernameLabel: 'Search by Telegram username',
+    usernamePlaceholder: '@username',
+    searchError: 'Could not run search. Try again.',
+    notFound: 'Coach with this username was not found',
+    notFoundHelp: 'Check the spelling and try again.',
+    openCoach: 'Open profile',
+  },
+  error: {
+    authFailedTitle: 'Sign-in failed',
+    authUnauthorized:
+      'Could not verify sign-in. Open the app from Telegram or use the login widget.',
+    authRateLimited: 'Too many sign-in attempts. Wait a bit and try again.',
+    authServer: 'The server is temporarily unavailable. Try again later.',
+    authNetwork: 'Cannot reach the server. Check your connection and try again.',
+    authClient: 'The request was rejected. Sign in again.',
+    authUnknown: 'Sign-in failed. Please try again.',
   },
 };
 
