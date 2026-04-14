@@ -142,6 +142,9 @@ const ru = {
     authUnknown: 'Не удалось выполнить вход. Попробуйте ещё раз.',
     notFound: 'Не найдено',
     sessionFull: 'Все места заняты',
+    forbidden: 'Недостаточно прав для этого действия',
+    invalidFilters: 'Неверные параметры фильтра. Проверьте ввод.',
+    coachContextRequired: 'Откройте раздел тренера, чтобы продолжить.',
   },
   common: {
     save: 'Сохранить',
@@ -254,6 +257,9 @@ const enPatch: Record<string, unknown> = {
     authNetwork: 'Cannot reach the server. Check your connection and try again.',
     authClient: 'The request was rejected. Sign in again.',
     authUnknown: 'Sign-in failed. Please try again.',
+    forbidden: 'You do not have access to this action',
+    invalidFilters: 'Invalid filter parameters. Check your input.',
+    coachContextRequired: 'Open coach mode to continue.',
   },
 };
 

@@ -18,6 +18,7 @@ import { CreatePlaySessionDto } from './dto/create-play-session.dto';
 import { QueryPlaySessionsDto } from './dto/query-play-sessions.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { generateInviteCode } from '../../common/utils/invite-code.util';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class PlaySessionsService {
@@ -71,7 +72,7 @@ export class PlaySessionsService {
   async findMy(
     userId: string,
     query: QueryPlaySessionsDto,
-  ): Promise<PlaySessionEntity[]> {
+  ): Promise<PaginatedResponseDto<PlaySessionEntity>> {
     const qb = this.sessionRepo
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.participants', 'p')
@@ -91,7 +92,14 @@ export class PlaySessionsService {
       qb.andWhere('s.date <= :dateTo', { dateTo: query.dateTo });
     }
 
-    return qb.orderBy('s.date', 'ASC').addOrderBy('s.startTime', 'ASC').getMany();
+    qb.orderBy('s.date', 'ASC').addOrderBy('s.startTime', 'ASC');
+
+    const [items, total] = await qb
+      .skip(query.skip)
+      .take(query.limit)
+      .getManyAndCount();
+
+    return new PaginatedResponseDto(items, total, query.page, query.limit);
   }
 
   async findByInviteCode(inviteCode: string): Promise<PlaySessionEntity> {

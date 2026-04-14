@@ -5,6 +5,7 @@ export function useCoachSlots(
   coachId: string | undefined,
   dateFrom: string,
   dateTo: string,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: ['slots', coachId, dateFrom, dateTo],
@@ -14,7 +15,7 @@ export function useCoachSlots(
         dateFrom,
         dateTo,
       }),
-    enabled: Boolean(coachId && dateFrom && dateTo),
+    enabled: Boolean(enabled && coachId && dateFrom && dateTo),
     staleTime: 30_000,
   });
 }

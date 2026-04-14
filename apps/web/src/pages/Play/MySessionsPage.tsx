@@ -6,15 +6,17 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SessionCard } from '@/components/play/SessionCard';
 import { Button } from '@/components/ui/Button';
+import { getApiErrorStatus } from '@/utils/apiError';
 import { ROUTES } from '@/utils/constants';
 import { t } from '@/utils/i18n';
 
 export function MySessionsPage() {
   const q = useQuery({
     queryKey: ['play-sessions', 'my'],
-    queryFn: () => fetchMyPlaySessions({ limit: 50 }),
+    queryFn: () => fetchMyPlaySessions(),
     staleTime: 30_000,
   });
+  const status = getApiErrorStatus(q.error);
 
   const items = q.data?.items ?? [];
 
@@ -33,7 +35,8 @@ export function MySessionsPage() {
 
       {q.isError ? (
         <EmptyState
-          description={t('common', 'retry')}
+          title={status === 400 ? t('error', 'invalidFilters') : t('error', 'unauthorized')}
+          description={status === 403 ? t('error', 'forbidden') : t('common', 'retry')}
           action={
             <Button variant="secondary" className="mt-3" onClick={() => void q.refetch()}>
               {t('common', 'retry')}

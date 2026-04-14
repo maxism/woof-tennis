@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import type { PlaySession, PlaySessionDetailed } from '@wooftennis/shared';
 import type { PaginatedResponse } from '@wooftennis/shared';
+import { buildSafeQuery } from './safeQuery';
 
 export interface CreatePlaySessionBody {
   locationText: string;
@@ -31,11 +32,27 @@ export async function joinPlaySession(id: string): Promise<PlaySession> {
 }
 
 export async function fetchMyPlaySessions(
-  params?: { page?: number; limit?: number },
+  params?: { dateFrom?: string; dateTo?: string; page?: number; limit?: number },
 ): Promise<PaginatedResponse<PlaySession>> {
-  const { data } = await apiClient.get<PaginatedResponse<PlaySession>>(
-    '/play-sessions/my',
-    { params },
+  const paginationEnabled = import.meta.env.VITE_PLAY_SESSIONS_PAGINATION_ENABLED === 'true';
+  const allowedKeys = paginationEnabled
+    ? (['dateFrom', 'dateTo', 'page', 'limit'] as const)
+    : (['dateFrom', 'dateTo'] as const);
+  const query = buildSafeQuery(
+    params as Record<string, string | number | boolean | undefined>,
+    allowedKeys,
   );
+  const { data } = await apiClient.get<PaginatedResponse<PlaySession> | PlaySession[]>(
+    '/play-sessions/my',
+    { params: query },
+  );
+  if (Array.isArray(data)) {
+    return {
+      items: data,
+      total: data.length,
+      page: 1,
+      limit: data.length || 20,
+    };
+  }
   return data;
 }

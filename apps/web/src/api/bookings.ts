@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import type { BookingDetailed, BookingStatus } from '@wooftennis/shared';
 import type { PaginatedResponse } from '@wooftennis/shared';
+import { buildSafeQuery } from './safeQuery';
 
 export interface QueryBookingsParams {
   page?: number;
@@ -10,12 +11,15 @@ export interface QueryBookingsParams {
   dateTo?: string;
 }
 
+const BOOKING_QUERY_KEYS = ['status', 'dateFrom', 'dateTo', 'page', 'limit'] as const;
+
 export async function fetchMyBookings(
   params?: QueryBookingsParams,
 ): Promise<PaginatedResponse<BookingDetailed>> {
+  const query = buildSafeQuery(params as Record<string, string | number | boolean | undefined>, BOOKING_QUERY_KEYS);
   const { data } = await apiClient.get<PaginatedResponse<BookingDetailed>>(
     '/bookings/my',
-    { params },
+    { params: query },
   );
   return data;
 }
@@ -23,9 +27,10 @@ export async function fetchMyBookings(
 export async function fetchCoachBookings(
   params?: QueryBookingsParams,
 ): Promise<PaginatedResponse<BookingDetailed>> {
+  const query = buildSafeQuery(params as Record<string, string | number | boolean | undefined>, BOOKING_QUERY_KEYS);
   const { data } = await apiClient.get<PaginatedResponse<BookingDetailed>>(
     '/bookings/coach',
-    { params },
+    { params: query },
   );
   return data;
 }

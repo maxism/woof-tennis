@@ -22,6 +22,7 @@ import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { LocationsService } from './locations.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { QueryLocationsDto } from './dto/query-locations.dto';
 import { UserEntity } from '../users/entities/user.entity';
 
 const uploadDir = process.env.UPLOAD_DIR || './uploads';
@@ -33,11 +34,8 @@ export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 
   @Get()
-  findAll(
-    @CurrentUser() user: UserEntity,
-    @Query('isActive') isActive?: boolean,
-  ) {
-    return this.locationsService.findByCoach(user.id, isActive);
+  findAll(@CurrentUser() user: UserEntity, @Query() query: QueryLocationsDto) {
+    return this.locationsService.findByCoach(user.id, query.isActive);
   }
 
   @Post()

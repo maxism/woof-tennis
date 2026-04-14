@@ -469,6 +469,22 @@ export class CoachGuard implements CanActivate {
 }
 ```
 
+### Семантика ошибок для list endpoint-ов (contract baseline)
+
+Для `GET /bookings/coach`, `GET /play-sessions/my`, `GET /locations` backend должен сохранять предсказуемое разделение причин:
+
+- `400` — query validation error (тип/формат/неподдерживаемый query-ключ);
+- `403` — role-gated отказ (`CoachGuard`, пользователь не тренер);
+- `200` — валидный запрос в рамках роли и поддерживаемых query.
+
+Это достигается комбинацией:
+
+- глобального `ValidationPipe` (`whitelist: true`, `forbidNonWhitelisted: true`, `transform: true`);
+- явных DTO для query каждого endpoint;
+- `@CoachOnly()` на coach-only маршрутах.
+
+Нельзя размывать контракт (например, заменять role-ошибку пустым `200 []`), иначе FE/QA теряют единый source of truth.
+
 ### @CurrentUser()
 
 Parameter decorator для извлечения пользователя из request:

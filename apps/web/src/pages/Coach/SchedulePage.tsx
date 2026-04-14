@@ -2,17 +2,21 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { endOfWeek, format, startOfWeek } from 'date-fns';
 import { useAuthStore } from '@/stores/authStore';
+import { useUIStore } from '@/stores/uiStore';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { WeekView } from '@/components/schedule/WeekView';
 import { useCoachSlots } from '@/hooks/useSlots';
+import { getApiErrorStatus } from '@/utils/apiError';
 import { ROUTES } from '@/utils/constants';
 import { t } from '@/utils/i18n';
 
 export function SchedulePage() {
   const coachId = useAuthStore((s) => s.user?.id);
+  const isCoach = useAuthStore((s) => Boolean(s.user?.isCoach));
+  const activeRole = useUIStore((s) => s.activeRole);
   const range = useMemo(() => {
     const start = startOfWeek(new Date(), { weekStartsOn: 1 });
     const end = endOfWeek(new Date(), { weekStartsOn: 1 });
@@ -22,7 +26,9 @@ export function SchedulePage() {
     };
   }, []);
 
-  const q = useCoachSlots(coachId, range.from, range.to);
+  const isCoachContext = isCoach && activeRole === 'coach';
+  const q = useCoachSlots(coachId, range.from, range.to, isCoachContext);
+  const status = getApiErrorStatus(q.error);
 
   return (
     <div>
@@ -42,10 +48,16 @@ export function SchedulePage() {
         }
       />
       {q.isLoading ? <Spinner /> : null}
-      {q.isError ? (
+      {!isCoachContext ? (
         <EmptyState
           title={t('error', 'coachRequired')}
-          description={t('common', 'retry')}
+          description={t('error', 'coachContextRequired')}
+        />
+      ) : null}
+      {q.isError ? (
+        <EmptyState
+          title={status === 400 ? t('error', 'invalidFilters') : t('error', 'coachRequired')}
+          description={status === 403 ? t('error', 'coachContextRequired') : t('common', 'retry')}
           action={
             <Button variant="secondary" onClick={() => void q.refetch()}>
               {t('common', 'retry')}

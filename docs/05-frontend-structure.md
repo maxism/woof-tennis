@@ -272,6 +272,20 @@ apiClient.interceptors.response.use(
 );
 ```
 
+### Runtime Contract Baseline: list endpoint-ы
+
+Для `GET /bookings/coach`, `GET /play-sessions/my`, `GET /locations` фронт должен соблюдать строгий контракт query/roles (см. `docs/03-api-spec.md`):
+
+- **Safe query builder:** отправлять только whitelisted ключи для конкретного endpoint.
+- **Ожидаемый `400`:** невалидный формат query или неподдерживаемый ключ.
+- **Ожидаемый `403`:** role-gated запрет (например, вызов coach-only endpoint из player-контекста).
+
+Практические правила:
+
+- `bookings/coach` — вызывать только при `activeRole === 'coach'`; query: `status`, `dateFrom`, `dateTo`, `page`, `limit`.
+- `locations` — вызывать только при `activeRole === 'coach'`; query: только `isActive` (если нужен фильтр).
+- `play-sessions/my` — всегда использовать контракт пагинации (`page`, `limit`) и ожидать `PaginatedResponse` (`items`, `total`, `page`, `limit`) как в `docs/03-api-spec.md`.
+
 ## Двухканальная авторизация (Mini App и веб)
 
 Целевая модель зафиксирована в `docs/15-auth-dual-channel-architecture.md` и `docs/03-api-spec.md`: один пользователь (`telegramId`), один JWT, два способа установить сессию.

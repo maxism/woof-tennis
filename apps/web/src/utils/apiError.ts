@@ -1,5 +1,12 @@
 import axios from 'axios';
 
+export function getApiErrorStatus(e: unknown): number | null {
+  if (axios.isAxiosError(e) && typeof e.response?.status === 'number') {
+    return e.response.status;
+  }
+  return null;
+}
+
 export function getApiErrorMessage(e: unknown, fallback: string): string {
   if (axios.isAxiosError(e) && e.response?.data && typeof e.response.data === 'object') {
     const m = (e.response.data as { message?: unknown }).message;

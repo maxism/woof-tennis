@@ -219,6 +219,11 @@ Authorization: Bearer <jwt_token>
 
 Получить локации текущего тренера.
 
+**Role expectation (baseline):**
+- endpoint доступен **только тренеру**;
+- при `user.isCoach === false` ожидаемый ответ: `403` (`Требуется доступ тренера`);
+- `403` в этом сценарии считается корректным контрактным поведением, а не ошибкой валидации.
+
 **Query params:**
 - `isActive` (boolean, optional) — фильтр по активности
 
@@ -501,7 +506,20 @@ isActive: false  (optional)
 
 Получить бронирования моих слотов (как тренер).
 
-**Query params:** аналогично `/bookings/my`.
+**Role expectation (baseline):**
+- endpoint доступен **только тренеру**;
+- при `user.isCoach === false` ожидаемый ответ: `403`.
+
+**Query params:**
+- `status` (`confirmed` | `cancelled` | `completed` | `no_show`, optional)
+- `dateFrom` (date, optional)
+- `dateTo` (date, optional)
+- `page` (number, default `1`)
+- `limit` (number, default `20`, max `100`)
+
+**Validation semantics:**
+- невалидный формат/значение query-параметров → `400`;
+- лишние (неподдерживаемые) query-ключи → `400` (strict DTO whitelist).
 
 **Response 200:** аналогичная структура с `player` вместо `coach`.
 
@@ -634,11 +652,38 @@ isActive: false  (optional)
 
 Мои игровые сессии (созданные мной и где я участник).
 
-**Query params:**
+**Query params (целевой baseline для FE/BE/QA):**
 - `dateFrom` (date, optional)
 - `dateTo` (date, optional)
+- `page` (number, default `1`)
+- `limit` (number, default `20`, max `100`)
 
-**Response 200:** массив PlaySession с участниками.
+**Response 200 (целевой):**
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "creatorId": "uuid",
+      "locationText": "Лужники, корт №3",
+      "date": "2026-04-16",
+      "startTime": "18:00",
+      "endTime": "20:00",
+      "comment": "Играем на среднем уровне, нужен 4й",
+      "inviteCode": "abc123xyz",
+      "status": "open",
+      "maxPlayers": 4,
+      "participants": [
+        { "id": "uuid", "firstName": "Иван", "status": "confirmed" }
+      ]
+    }
+  ],
+  "total": 12,
+  "page": 1,
+  "limit": 20
+}
+```
 
 ### GET `/play-sessions/by-invite/:inviteCode`
 
@@ -896,6 +941,10 @@ isActive: false  (optional)
   "error": "Ошибка валидации"
 }
 ```
+
+Для list endpoint-ов действует разделение причин:
+- `400` — невалидный query (тип/формат/неподдерживаемый ключ);
+- `403` — role-gated запрет доступа (например, coach-only endpoint вызван игроком).
 
 ### Стандартные HTTP-коды
 
