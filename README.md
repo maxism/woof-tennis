@@ -18,6 +18,7 @@ Telegram Mini App для букинга теннисных тренировок 
 - [13 — Этапы сборки проекта](docs/13-build-stages.md)
 - [14 — С чего начать: настройка и Telegram](docs/14-onboarding-setup.md)
 - [15 — Авторизация: веб (Login Widget) + Mini App — ревью и задания](docs/15-auth-dual-channel-architecture.md)
+- [19 — Chat orchestration workflow](docs/19-chat-orchestration-workflow.md)
 
 ### Дизайн и задачи
 - [11 — Дизайн-артефакты](docs/11-design-artifacts.md)
