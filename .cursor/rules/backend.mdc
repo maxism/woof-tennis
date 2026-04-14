@@ -1,0 +1,68 @@
+---
+description: WoofTennis Backend — NestJS паттерны, модули, валидация, ошибки
+globs: apps/api/**
+alwaysApply: false
+---
+
+# Backend rules (apps/api)
+
+## Стек
+
+NestJS 10 + TypeScript + TypeORM + PostgreSQL + Telegraf (bot) + `@nestjs/jwt` + class-validator
+
+## Активные модули
+
+```
+apps/api/src/modules/
+  auth/         — initData + Login Widget валидация, JWT выдача
+  users/        — профиль, isCoach toggle
+  locations/    — CRUD локаций тренера
+  events/       — основной модуль: EventsFacadeService + InvitesController
+  notifications/— in-app уведомления + Telegram push
+  bot/          — Telegraf bot, webhook
+```
+
+**Не трогать** без явного запроса: `schedule/` (templates + slots — legacy), `bookings/`, `play-sessions/`, `makeup/`, `reviews/` — это мёртвый legacy-код, который пока не удалён из файловой системы, но не используется публичным API.
+
+## Архитектурная особенность: Event = facade над SlotEntity
+
+`EventsFacadeService` использует `SlotEntity` как хранилище для событий (технический долг, не рефакторить без явного запроса). Публичный API оперирует термином "event", внутри это slot. При добавлении полей в EventDto — добавлять и в `packages/shared/src/types/event.ts`.
+
+## Паттерн ошибок
+
+Все ошибки через `eventHttpError()` из `events.errors.ts`:
+```typescript
+throw eventHttpError(HttpStatus.CONFLICT, 'Текст на русском', 'MACHINE_CODE');
+```
+Ответ: `{ statusCode, message, error, code }`. Текст `message` — **всегда на русском**.
+
+## DTO валидация
+
+- Все DTO с `class-validator` декораторами
+- `@Type(() => Date)` + `@IsDate()` для datetime полей
+- `@IsUUID('4')` для UUID
+- Трансформация через `@nestjs/common` `ValidationPipe` (включён глобально)
+
+## Гварды и декораторы
+
+- `@UseGuards(JwtAuthGuard)` — на все защищённые эндпоинты
+- `@CurrentUser()` — инжект `UserEntity` из JWT payload
+- `@UuidValidationPipe` — pipe для `:id` параметров в путях
+
+## Миграции
+
+- **Никогда не использовать** `synchronize: true` в TypeORM config
+- Новые таблицы/колонки только через миграции в `src/migrations/`
+- Генерация: `npm run migration:generate --workspace=@wooftennis/api -- -n MigrationName`
+- Запуск: `npm run migration:run --workspace=@wooftennis/api`
+
+## Уведомления
+
+При изменении статуса события — синхронно вызывать `notificationsService.send()` с `NotificationType` из `@wooftennis/shared`. Telegram push и in-app запись — в одном вызове.
+
+## Проверка перед сдачей
+
+```bash
+npm run lint --workspace=@wooftennis/api
+npm run test --workspace=@wooftennis/api
+```

@@ -1,0 +1,63 @@
+---
+description: WoofTennis — контекст проекта, стек, MVP-скоуп, архитектурные решения
+alwaysApply: true
+---
+
+# WoofTennis
+
+Telegram Mini App для соединения теннисных тренеров и игроков. Монорепо: `apps/api` (NestJS), `apps/web` (React + Vite + Tailwind), `packages/shared` (типы/enum'ы).
+
+## Продуктовая логика
+
+- Тренер создаёт событие (время + локация), назначает игрока напрямую или отправляет инвайт-ссылку.
+- Игрок видит событие на Главной и получает уведомление в Telegram.
+- Один пользователь может быть и тренером (`isCoach: true`), и игроком одновременно.
+- Авторизация: Telegram `initData` (Mini App) + Login Widget (браузер). Оба выдают JWT.
+- Язык UI: **русский** (основной). Все user-facing строки через `t()` из `apps/web/src/utils/i18n.ts`.
+
+## Навигация
+
+- 2 таба: **Расписание** (`/`) и **Профиль** (`/profile`)
+- Центральная FAB-кнопка `+` → `/play/create` (CreateEventPage)
+- TabBar скрывается на `/review/*`, `**/edit`, `/coach/locations/new`
+
+## Активные роуты
+
+```
+/                        HomePage          — список событий по датам
+/profile                 ProfilePage       — аккаунт + кабинет тренера
+/profile/notifications   NotificationsPage — архив уведомлений
+/coach/locations         LocationsPage     [Coach]
+/coach/locations/new     LocationFormPage  [Coach]
+/coach/locations/:id/edit LocationFormPage [Coach]
+/play/create             CreateEventPage   — создание события
+/player/invite/:code     InviteAcceptPage  — принятие инвайта
+```
+
+## Ключевые сущности (runtime)
+
+- **Event** — тренировка. В БД хранится как `SlotEntity` (EventsFacadeService — фасад над `SlotEntity`). Публичный API использует термин "event". Не путать с таблицей.
+- **EventInvite** — объект приглашения с кодом и сроком (24ч). Таблица `event_invites`.
+- **Location** — корт/зал. Принадлежит тренеру.
+- **User** — `isCoach: boolean`.
+
+## Статусы событий
+
+`draft` → `invited` | `attached` → `accepted` | `declined` → `cancelled` | `rescheduled` | `completed`
+
+## Коды ошибок (machine codes)
+
+`EVENT_TIME_CONFLICT` · `INVITE_EXPIRED` · `INVITE_INVALID` · `EVENT_ALREADY_FULL` · `EVENT_NOT_AVAILABLE` · `ROLE_FORBIDDEN` · `EVENT_NOT_FOUND` · `INVITE_ALREADY_RESOLVED` · `VALIDATION_ERROR`
+
+## Цвета событий (FE)
+
+- Полоска слева на карточке = цвет локации (deterministic hash от `locationId` → палитра 8 цветов в `apps/web/src/utils/eventColors.ts`)
+- Badge справа = цвет статуса (конфиг в том же файле)
+
+## Что НЕ входит в MVP
+
+Отзывы, отыгрыши (makeup debts), поиск тренеров, каталог, сплит-тренировки, периодические события (isRecurring есть в форме, но бэкенд пока игнорирует). Не добавлять без явного запроса.
+
+## Мёртвый код — не восстанавливать
+
+Удалены и не используются: `api/bookings`, `api/play-sessions`, `api/slots`, `api/makeup-debts`, `api/schedule-templates`, `hooks/useBookings`, `hooks/useSlots`, `components/schedule/`, `components/booking/`. Страницы SearchPage, CoachProfilePage, SchedulePage и аналоги тоже удалены.

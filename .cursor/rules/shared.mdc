@@ -1,0 +1,64 @@
+---
+description: WoofTennis Shared package — типы, enum'ы, протокол синхронизации
+globs: packages/shared/**
+alwaysApply: false
+---
+
+# Shared package rules (packages/shared)
+
+## Назначение
+
+Единый источник правды для типов и enum'ов, используемых и фронтендом, и бэкендом. Изменение здесь требует пересборки перед тем как изменения увидит `apps/web`.
+
+## Структура
+
+```
+packages/shared/src/
+  enums/
+    event-status.enum.ts   — EventStatus (draft|invited|attached|accepted|declined|cancelled|rescheduled|completed)
+    invite-status.enum.ts  — InviteStatus
+    notification-type.enum.ts
+    slot-status.enum.ts    — legacy, не трогать
+    booking-status.enum.ts — legacy, не трогать
+  types/
+    event.ts    — EventItem, EventListResponse, EventInvitePreview, EventInviteResponse
+    location.ts — LocationItem
+    user.ts     — UserProfile
+    invite.ts   — InviteItem
+    notification.ts
+  index.ts      — реэкспорт всего
+```
+
+## Обязательный шаг после изменений
+
+```bash
+npm run build --workspace=@wooftennis/shared
+```
+
+Без этого `apps/web` не увидит новые поля/типы (TypeScript резолвит из `dist/`).
+
+## EventItem (актуальная версия)
+
+```typescript
+interface EventItem {
+  id: string;
+  coachId: string;
+  playerId: string | null;
+  locationId: string;
+  locationName?: string;      // ← добавлено, приходит с бэкенда
+  startsAt: string;           // ISO UTC
+  endsAt: string;             // ISO UTC
+  status: EventStatus;
+  inviteId: string | null;
+  inviteExpiresAt: string | null;
+  source: 'manual' | 'template';
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+## Правила
+
+- Не добавлять enum'ы/типы которые используются только в одном пакете — держать их там
+- При добавлении нового `NotificationType` — синхронизировать с `apps/api` (bot notifications)
+- `slot-status`, `booking-status`, `play-session-status`, `makeup-status` — legacy enums, не добавлять новые значения

@@ -1,0 +1,66 @@
+---
+description: WoofTennis Frontend — паттерны, компоненты, стилизация, i18n
+globs: apps/web/**
+alwaysApply: false
+---
+
+# Frontend rules (apps/web)
+
+## Стек
+
+React 18 + Vite + TypeScript + Tailwind CSS + TanStack Query + Zustand + React Router v6 + `@telegram-apps/sdk-react`
+
+## Цвета и темы
+
+- CSS-переменные `tg-*` (из Telegram SDK) и `woof-*` (fallback, `globals.css`)
+- В Tailwind: `text-tg-text`, `bg-tg-secondary-bg`, `border-woof-border`, `text-woof-accent` и т.д.
+- **Никогда не хардкодить** цвета напрямую — только через переменные/классы Tailwind
+- Светлая и тёмная тема работают автоматически через CSS variables
+
+## Компоненты
+
+- UI-kit: `components/ui/` (Button, Card, Input, Select, Spinner, EmptyState, PageHeader, Modal, Badge, Avatar)
+- `EventCard` + `EventsList` в `components/events/` — главные компоненты расписания
+- `Section` wrapper для форм: `rounded-2xl border border-woof-border bg-tg-secondary-bg px-4 py-3`
+- Иконки — inline SVG (нет icon-библиотеки)
+
+## Локализация
+
+- Все user-facing строки через `t(domain, key)` из `utils/i18n.ts`
+- Не добавлять строки напрямую в JSX без добавления в словарь
+- Русский = основной, английский patch в `enPatch` объекте того же файла
+
+## Data fetching
+
+- Все запросы через TanStack Query (`useQuery`, `useMutation`)
+- Базовый клиент: `api/client.ts` (axios с JWT interceptor)
+- Хуки по домену: `hooks/useEvents.ts`, `hooks/useBootstrapAuth.ts`, `hooks/useNotifications.ts`
+- Активные API-модули: `api/events.ts`, `api/invites.ts`, `api/locations.ts`, `api/users.ts`, `api/notifications.ts`, `api/auth.ts`
+- **Не импортировать** `api/bookings`, `api/play-sessions`, `api/slots`, `api/makeup-debts`, `api/schedule-templates` — удалены
+
+## Состояние
+
+- `authStore` (Zustand): `user`, `isAuthenticated`, `isLoading`, `login()`
+- `uiStore` (Zustand): `activeRole` (`'player' | 'coach'`), `homeLocationId`, `homeScrollYByRole`
+- Серверный стейт — TanStack Query, не Zustand
+
+## Роутинг и защита
+
+- `CoachRoute` — редирект на `/` если `!isCoach || activeRole !== 'coach'`
+- ROUTES: `ROUTES.home`, `ROUTES.profile`, `ROUTES.notifications`, `ROUTES.coach.locations`, `ROUTES.coach.locationNew`, `ROUTES.coach.locationEdit(id)`, `ROUTES.play.create`, `ROUTES.invite(code)`
+
+## Паттерны
+
+- Форма создания — секции (Section wrapper) с метками `text-[11px] font-semibold uppercase tracking-wider text-tg-hint`
+- Терминальные экраны (успех/ошибка) — отдельный return с `PageHeader` + карточкой
+- Empty state через `EmptyState` компонент
+- Loading через `Spinner` в центре `py-12`
+- Ошибки мутаций — красная плашка `border border-woof-danger/30 bg-woof-danger/10 text-woof-danger`
+- `active:scale-[0.98]` на интерактивных карточках
+
+## Запреты
+
+- Не добавлять новые зависимости без явного запроса
+- Не создавать отдельные route-компоненты для post-MVP фич (отзывы, поиск тренеров и т.д.)
+- Не использовать `any` — строгий TypeScript
+- Не инлайнить hex-цвета напрямую в className
