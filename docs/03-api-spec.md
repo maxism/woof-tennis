@@ -2,6 +2,23 @@
 
 **Base URL:** `/api/v1`
 
+## Implementation Baseline (one-pager runtime contract)
+
+Для IA vNext (`docs/18-pm-one-pager.md`) FE и BE работают по единому event-centric контракту в рантайме:
+- read: `GET /events/my`, `GET /events/:eventId`, `GET /invites/:code`;
+- create/assign: `POST /events`, `POST /events/:eventId/attach-player`, `POST /events/:eventId/invite`;
+- invite actions: `POST /invites/:inviteId/accept`, `POST /invites/:inviteId/decline`;
+- lifecycle: `PATCH /events/:eventId/cancel`, `PATCH /events/:eventId/reschedule`, `PATCH /events/:eventId/complete`.
+
+Совместимость с существующими модулями:
+- `slots/bookings/play-sessions` остаются внутренней доменной реализацией;
+- event-эндпоинты являются обязательным публичным API для one-pager;
+- клиент не агрегирует one-pager события из legacy read endpoint-ов.
+
+Единая ошибка event-флоу:
+- все ошибки возвращают `statusCode`, RU `message`, `error` и машинный `code`;
+- обязательные коды для one-pager: `EVENT_TIME_CONFLICT`, `INVITE_EXPIRED`, `INVITE_INVALID`, `EVENT_ALREADY_FULL`, `EVENT_NOT_AVAILABLE`, `ROLE_FORBIDDEN`, `EVENT_NOT_FOUND`, `INVITE_ALREADY_RESOLVED`.
+
 Все эндпоинты (кроме публичных `POST /auth/telegram` и `POST /auth/telegram/widget`) требуют JWT-токен в заголовке:
 
 ```
@@ -9,6 +26,153 @@ Authorization: Bearer <jwt_token>
 ```
 
 Эндпоинты, отмеченные `[Coach]`, требуют `user.isCoach === true`.
+
+---
+
+## 0. Events & Invites (one-pager)
+
+### Entity: Event (runtime DTO)
+
+```json
+{
+  "id": "uuid",
+  "coachId": "uuid",
+  "playerId": "uuid | null",
+  "locationId": "uuid",
+  "startsAt": "2026-04-20T09:00:00Z",
+  "endsAt": "2026-04-20T10:00:00Z",
+  "status": "draft | invited | attached | accepted | declined | cancelled | rescheduled | completed",
+  "inviteId": "uuid | null",
+  "inviteExpiresAt": "2026-04-19T09:00:00Z | null",
+  "source": "manual | template",
+  "createdAt": "2026-04-14T10:00:00Z",
+  "updatedAt": "2026-04-14T10:00:00Z"
+}
+```
+
+### GET `/events/my`
+
+Единый источник данных для Главной (оба контекста роли).
+
+**Query params (required contract):**
+- `role` (`player` | `coach`, required)
+- `dateFrom` (ISO datetime, required)
+- `dateTo` (ISO datetime, required)
+- `locationId` (uuid, optional)
+
+**Response 200:** `{ "items": Event[], "total": number }`
+
+### GET `/events/:eventId`
+
+Детали одного события для карточки/экрана.
+
+**Errors:**
+- `404` + `code=EVENT_NOT_FOUND` — событие не найдено/недоступно.
+
+### POST `/events` `[Coach]`
+
+Создать событие тренировки.
+
+**Request Body:**
+
+```json
+{
+  "locationId": "uuid",
+  "startsAt": "2026-04-20T09:00:00Z",
+  "endsAt": "2026-04-20T10:00:00Z",
+  "recurrence": null
+}
+```
+
+**Response 201:** `Event` со статусом `draft`.
+
+### POST `/events/:eventId/attach-player` `[Coach]`
+
+Прямое назначение игрока.
+
+**Request Body:**
+
+```json
+{
+  "playerId": "uuid"
+}
+```
+
+**Response 200:** `Event` со статусом `attached`.
+
+**Errors:**
+- `409` + `code=EVENT_TIME_CONFLICT`
+- `409` + `code=EVENT_NOT_AVAILABLE`
+- `409` + `code=EVENT_ALREADY_FULL`
+
+### POST `/events/:eventId/invite` `[Coach]`
+
+Создать или переиздать инвайт.
+
+**Response 200:**
+
+```json
+{
+  "inviteId": "uuid",
+  "code": "abc123",
+  "expiresAt": "2026-04-19T09:00:00Z"
+}
+```
+
+### GET `/invites/:code`
+
+Проверка invite-ссылки и preview события для игрока.
+
+**Response 200:** `{ "inviteId": "uuid", "event": Event, "status": "pending | accepted | declined | expired" }`
+
+**Errors:**
+- `404` + `code=INVITE_INVALID`
+- `410` + `code=INVITE_EXPIRED`
+
+### POST `/invites/:inviteId/accept`
+
+Принять приглашение.
+
+**Response 200:** `Event` со статусом `accepted`.
+
+**Errors:**
+- `404` + `code=INVITE_INVALID`
+- `410` + `code=INVITE_EXPIRED`
+- `409` + `code=INVITE_ALREADY_RESOLVED`
+- `409` + `code=EVENT_TIME_CONFLICT`
+
+### POST `/invites/:inviteId/decline`
+
+Отклонить приглашение.
+
+**Response 200:** `Event` со статусом `declined`.
+
+### PATCH `/events/:eventId/cancel` `[Coach]`
+
+Отмена события.
+
+**Response 200:** `Event` со статусом `cancelled`.
+
+### PATCH `/events/:eventId/reschedule` `[Coach]`
+
+Перенос события на новый слот.
+
+**Request Body:**
+
+```json
+{
+  "startsAt": "2026-04-21T09:00:00Z",
+  "endsAt": "2026-04-21T10:00:00Z"
+}
+```
+
+**Response 200:** `Event` со статусом `rescheduled`.
+
+### PATCH `/events/:eventId/complete` `[Coach]`
+
+Завершить событие.
+
+**Response 200:** `Event` со статусом `completed`.
 
 ---
 
@@ -938,9 +1102,12 @@ isActive: false  (optional)
 {
   "statusCode": 400,
   "message": "Нельзя отменить бронирование менее чем за 24 часа до тренировки",
-  "error": "Ошибка валидации"
+  "error": "Ошибка валидации",
+  "code": "BOOKING_CANCEL_NOT_ALLOWED"
 }
 ```
+
+`code` обязателен для всех endpoint-ов из раздела `Events & Invites` и рекомендуется для остальных модулей.
 
 Для list endpoint-ов действует разделение причин:
 - `400` — невалидный query (тип/формат/неподдерживаемый ключ);

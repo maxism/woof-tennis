@@ -16,3 +16,11 @@ export function getApiErrorMessage(e: unknown, fallback: string): string {
   if (e instanceof Error) return e.message;
   return fallback;
 }
+
+export function getApiErrorCode(e: unknown): string | null {
+  if (axios.isAxiosError(e) && e.response?.data && typeof e.response.data === 'object') {
+    const code = (e.response.data as { code?: unknown }).code;
+    return typeof code === 'string' ? code : null;
+  }
+  return null;
+}

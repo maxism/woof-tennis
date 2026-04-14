@@ -1,7 +1,7 @@
 export const ROUTES = {
   home: '/',
   profile: '/profile',
-  notifications: '/notifications',
+  notifications: '/profile/notifications',
   coach: {
     locations: '/coach/locations',
     locationNew: '/coach/locations/new',
@@ -20,7 +20,9 @@ export const ROUTES = {
   play: {
     mine: '/play/mine',
     new: '/play/new',
+    create: '/play/create',
     join: (code: string) => `/play/${code}`,
   },
+  invite: (code: string) => `/player/invite/${code}`,
   review: (bookingId: string) => `/review/${bookingId}`,
 } as const;

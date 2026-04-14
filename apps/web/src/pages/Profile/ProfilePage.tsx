@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -7,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { updateMe } from '@/api/users';
 import { useUIStore } from '@/stores/uiStore';
+import { ROUTES } from '@/utils/constants';
 import { t } from '@/utils/i18n';
 
 export function ProfilePage() {
@@ -53,6 +55,7 @@ export function ProfilePage() {
         </Card>
       ) : null}
       <div className="mt-6">
+        <p className="mb-2 text-sm font-medium text-tg-hint">{t('profile', 'accountRole')}</p>
         <Button
           variant="secondary"
           className="w-full"
@@ -63,6 +66,24 @@ export function ProfilePage() {
           {user.isCoach ? 'Выкл' : 'Вкл'}
         </Button>
       </div>
+      <Card className="mt-4">
+        <p className="text-sm font-medium text-tg-hint">{t('profile', 'coachCabinet')}</p>
+        <p className="mt-1 text-sm text-tg-text">{t('profile', 'coachToolsHint')}</p>
+        <div className="mt-3 grid grid-cols-1 gap-2">
+          <Link to={ROUTES.coach.locations}>
+            <Button variant="secondary" className="w-full">{t('nav', 'locations')}</Button>
+          </Link>
+          <Link to={ROUTES.coach.schedule}>
+            <Button variant="secondary" className="w-full">{t('nav', 'schedule')}</Button>
+          </Link>
+        </div>
+      </Card>
+      <Card className="mt-4">
+        <p className="text-sm font-medium text-tg-hint">{t('profile', 'notificationsArchive')}</p>
+        <Link to={ROUTES.notifications}>
+          <Button className="mt-3 w-full">{t('nav', 'notifications')}</Button>
+        </Link>
+      </Card>
     </div>
   );
 }

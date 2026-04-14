@@ -16,7 +16,7 @@
 
 ---
 
-## Волна 1 — Core Flow
+## Единый FE scope (реализуется целиком)
 
 ### FE-1. Обновить shell навигации
 **Файлы:**
@@ -70,10 +70,7 @@
 - Добавить ключи для новых статусов и CTA.
 - Выдержать RU-primary, EN-fallback.
 - Проверить light/dark на обновленных экранах.
-
----
-
-## Волна 2 — Edge Cases and Quality
+- Ввести единый UI-мэппинг статусов из `docs/18-pm-one-pager.md` (включая `invite_expired`, `invite_invalid`, `time_conflict`).
 
 ### FE-6. Обработка edge-cases invite/direct-attach
 **Файлы:**
@@ -105,6 +102,20 @@
 - Empty/loading/error на каждом критичном экране.
 - Ревью доступности CTA и коротких русских лейблов.
 - Смоук по главным сценариям из `docs/04-user-flows.md`.
+- Зафиксировать явный `success` state и terminal views для invite/direct-attach кейсов.
+
+### FE-9. Обязательные тексты terminal/empty состояний
+**Файлы:**
+- `apps/web/src/utils/i18n.ts`
+- `apps/web/src/pages/Home/HomePage.tsx`
+- `apps/web/src/pages/Player/InviteAcceptPage.tsx`
+
+**Задачи:**
+- Главная empty: `Пока нет событий` + CTA `Создать событие`.
+- `invite_expired`: `Срок приглашения истек` + CTA `Запросить новый инвайт`.
+- `invite_invalid`: `Приглашение недействительно` + CTA `На Главную`.
+- `time_conflict`: `Это время уже занято` + CTA `Выбрать другое время`.
+- Успех `direct-attach` и `invite`: отдельные success-экраны с явным следующим действием (`К событию` / `Поделиться`).
 
 ---
 
@@ -114,9 +125,11 @@
 - Сценарии `direct-attach` и `invite` работают предсказуемо и имеют понятные статусы.
 - Уведомления доступны в профиле и дублируются в Telegram без потери информации.
 - Для dual-role не возникает переключений навигации и потери контекста.
+- Для всех критичных экранов реализованы `loading/empty/error/success`; для invite/direct-attach реализованы terminal states (`invite_expired`, `invite_invalid`, `time_conflict`, `cancelled`).
 
 ## Зависимости от API/архитектуры
 
-- Подтвержден единый контракт event-centric endpoint-ов.
-- Подтверждены коды ошибок для invite/attach конфликтов.
-- Согласованы финальные DTO/enum в `@wooftennis/shared`.
+- FE реализуется строго на event/invite API (`/events/*`, `/invites/*`) из `docs/03-api-spec.md`.
+- Ошибки event/invite обрабатываются по полному формату `statusCode + message + error + code`.
+- Обязательные machine codes в UI: `EVENT_TIME_CONFLICT`, `INVITE_EXPIRED`, `INVITE_INVALID`, `INVITE_ALREADY_RESOLVED`, `ROLE_FORBIDDEN`.
+- DTO/enum в `@wooftennis/shared` синхронизированы со статусной моделью из `docs/18-pm-one-pager.md`.

@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { HomePage } from '@/pages/Home/HomePage';
 import { ProfilePage } from '@/pages/Profile/ProfilePage';
 import { NotificationsPage } from '@/pages/Notifications/NotificationsPage';
+import { InviteAcceptPage } from '@/pages/Player/InviteAcceptPage';
 import { SearchPage } from '@/pages/Player/SearchPage';
 import { CoachProfilePage } from '@/pages/Player/CoachProfilePage';
 import { BookingDetailPage } from '@/pages/Player/BookingDetailPage';
@@ -13,6 +14,7 @@ import { TemplateFormPage } from '@/pages/Coach/TemplateFormPage';
 import { SlotDetailPage } from '@/pages/Coach/SlotDetailPage';
 import { ManualSlotPage } from '@/pages/Coach/ManualSlotPage';
 import { NewSessionPage } from '@/pages/Play/NewSessionPage';
+import { CreateEventPage } from '@/pages/Play/CreateEventPage';
 import { JoinSessionPage } from '@/pages/Play/JoinSessionPage';
 import { MySessionsPage } from '@/pages/Play/MySessionsPage';
 import { ReviewFormPage } from '@/pages/Reviews/ReviewFormPage';
@@ -21,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { getStartParam, subscribeTelegramTheme, syncThemeFromTelegram } from '@/utils/telegram';
 import { parsePlayInviteFromStartParam } from '@/utils/invite';
+import { ROUTES } from '@/utils/constants';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 
 function DeepLinkHandler() {
@@ -31,7 +34,7 @@ function DeepLinkHandler() {
   useEffect(() => {
     if (isLoading || !isAuthenticated) return;
     const code = parsePlayInviteFromStartParam(getStartParam());
-    if (code) navigate(`/play/${code}`, { replace: true });
+    if (code) navigate(ROUTES.invite(code), { replace: true });
   }, [isLoading, isAuthenticated, navigate]);
 
   useEffect(() => {
@@ -85,7 +88,7 @@ export default function App() {
           <Route path="/" element={<AppLayout />}>
             <Route index element={<HomePage />} />
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="profile/notifications" element={<NotificationsPage />} />
 
             <Route
               path="coach/locations"
@@ -193,7 +196,9 @@ export default function App() {
                 </PlayerRoute>
               }
             />
+            <Route path="play/create" element={<CreateEventPage />} />
             <Route path="play/:inviteCode" element={<JoinSessionPage />} />
+            <Route path="player/invite/:code" element={<InviteAcceptPage />} />
 
             <Route path="review/:bookingId" element={<ReviewFormPage />} />
           </Route>

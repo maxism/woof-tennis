@@ -16,6 +16,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { MakeupModule } from './modules/makeup/makeup.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { BotModule } from './modules/bot/bot.module';
+import { EventsModule } from './modules/events/events.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -50,6 +51,7 @@ import { HealthController } from './health.controller';
     MakeupModule,
     NotificationsModule,
     BotModule,
+    EventsModule,
   ],
   controllers: [HealthController],
 })

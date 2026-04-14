@@ -42,7 +42,9 @@ apps/web/
     │   ├── schedule-templates.ts   # Schedule Templates API calls
     │   ├── slots.ts                # Slots API calls
     │   ├── bookings.ts             # Bookings API calls
-    │   ├── play-sessions.ts        # Play Sessions API calls
+    │   ├── events.ts               # Event-centric API calls (/events/*)
+    │   ├── invites.ts              # Invite API calls (/invites/*)
+    │   ├── play-sessions.ts        # Play sessions (вне core one-pager)
     │   ├── reviews.ts              # Reviews API calls
     │   ├── makeup-debts.ts         # Makeup Debts API calls
     │   └── notifications.ts        # Notifications API calls
@@ -78,7 +80,7 @@ apps/web/
     │   │   └── MyGamesPage.tsx      # Самостоятельные игры игрока (лист/архив)
     │   ├── Play/
     │   │   ├── CreateEventPage.tsx # Универсальный сценарий создания через CTA
-    │   │   └── JoinSessionPage.tsx # Legacy-инвайты/совместимость
+    │   │   └── JoinSessionPage.tsx # Присоединение по play-session deep link
     │   ├── Reviews/
     │   │   └── ReviewFormPage.tsx  # Оценка после тренировки
     │   └── Notifications/
@@ -261,19 +263,23 @@ apiClient.interceptors.response.use(
 );
 ```
 
-### Runtime Contract Baseline: list endpoint-ы
+### Runtime Contract Baseline: one-pager endpoints
 
-Для `GET /bookings/coach`, `GET /play-sessions/my`, `GET /locations` фронт должен соблюдать строгий контракт query/roles (см. `docs/03-api-spec.md`):
+Для one-pager FE работает через `GET /events/my`, `GET /events/:eventId`, `POST /events`, `POST /events/:eventId/attach-player`, `POST /events/:eventId/invite`, `GET /invites/:code`, `POST /invites/:inviteId/accept`, `POST /invites/:inviteId/decline` (см. `docs/03-api-spec.md`).
+
+Для `GET /bookings/coach`, `GET /play-sessions/my`, `GET /locations` фронт также соблюдает строгий контракт query/roles там, где используются соответствующие экраны:
 
 - **Safe query builder:** отправлять только whitelisted ключи для конкретного endpoint.
 - **Ожидаемый `400`:** невалидный формат query или неподдерживаемый ключ.
 - **Ожидаемый `403`:** role-gated запрет (например, вызов coach-only endpoint из player-контекста).
+- **Ожидаемый `409`/`410` c `code`:** бизнес-конфликт в event/invite сценариях (`EVENT_TIME_CONFLICT`, `INVITE_EXPIRED`, `INVITE_INVALID` и др.).
 
 Практические правила:
 
 - `bookings/coach` — вызывать только при `activeRole === 'coach'`; query: `status`, `dateFrom`, `dateTo`, `page`, `limit`.
 - `locations` — вызывать только при `activeRole === 'coach'`; query: только `isActive` (если нужен фильтр).
 - `play-sessions/my` — всегда использовать контракт пагинации (`page`, `limit`) и ожидать `PaginatedResponse` (`items`, `total`, `page`, `limit`) как в `docs/03-api-spec.md`.
+- `events/my` — всегда передавать `role`, `dateFrom`, `dateTo`; для фильтра локации использовать только `locationId`.
 
 ## Двухканальная авторизация (Mini App и веб)
 
@@ -439,11 +445,9 @@ export const UI = {
   ru: {
   // Навигация
   nav: {
-    myTrainings: 'Мои тренировки',
-    coaches: 'Тренеры',
-    play: 'Игра',
-    notifications: 'Уведомления',
+    home: 'Главная',
     profile: 'Профиль',
+    notifications: 'Уведомления',
     schedule: 'Расписание',
     locations: 'Локации',
   },
@@ -577,11 +581,9 @@ export const UI = {
   en: {
     // Навигация
     nav: {
-      myTrainings: 'My trainings',
-      coaches: 'Coaches',
-      play: 'Play',
-      notifications: 'Notifications',
+      home: 'Home',
       profile: 'Profile',
+      notifications: 'Notifications',
       schedule: 'Schedule',
       locations: 'Locations',
     },

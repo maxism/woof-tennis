@@ -77,12 +77,12 @@ sequenceDiagram
 
     C->>MA: Нажимает "Создать" на Главной
     C->>MA: Выбирает тип (разовая/периодическая), время, локацию
-    MA->>API: POST /coach/events
+    MA->>API: POST /events
     API->>DB: INSERT Slot/Event
     API-->>MA: Event created
 
     C->>MA: Выбирает игрока из базы
-    MA->>API: POST /coach/events/:id/attach-player { playerId }
+    MA->>API: POST /events/:id/attach-player { playerId }
     API->>DB: INSERT Booking (status: confirmed)
     API-->>MA: Booking created
 
@@ -153,7 +153,7 @@ sequenceDiagram
 
     C->>MA: Создаёт тренировку на Главной
     C->>MA: Нажимает "Поделиться инвайтом"
-    MA->>API: POST /coach/events/:id/invite
+    MA->>API: POST /events/:id/invite
     API-->>MA: Invite { code: "abc123" }
     MA->>MA: Формирует ссылку: t.me/WoofTennisBot?startapp=play_abc123
 
@@ -163,7 +163,7 @@ sequenceDiagram
     P->>TG: Нажимает на ссылку
     TG->>MA: Открывает Mini App с параметром startapp=play_abc123
     MA->>MA: Парсит invite code из startapp
-    MA->>API: GET /invites/by-code/abc123
+    MA->>API: GET /invites/abc123
     API-->>MA: Event details + coach + location
 
     P->>MA: Нажимает "Принять приглашение"
@@ -301,8 +301,8 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     A[Пользователь открывает Главную] --> B{Какие роли активны?}
-    B -->|Игрок| C["GET /events/my?dateFrom=today"]
-    B -->|Тренер| D["GET /coach/events?dateFrom=today"]
+    B -->|Игрок| C["GET /events/my?role=player&dateFrom=today&dateTo=+14d"]
+    B -->|Тренер| D["GET /events/my?role=coach&dateFrom=today&dateTo=+14d"]
     B -->|Обе роли| E[Сегмент: Как игрок / Как тренер]
     E --> C
     E --> D
@@ -319,6 +319,12 @@ flowchart TD
     K -->|Игрок| M[Создать самостоятельную игру]
 ```
 
+### Поведение сетки Главной (обязательно для FE)
+- Сетка сортируется по времени ближайшего события (ascending).
+- Фильтр локаций применяется поверх текущего role-контекста (`Как игрок` / `Как тренер`).
+- При переключении роли сохраняются выбранные дата, локация и позиция скролла.
+- Empty-state в любом role-контексте: `Пока нет событий` + CTA `Создать событие`.
+
 ---
 
 ## 10. Сводная таблица экранов и действий
@@ -334,3 +340,32 @@ flowchart TD
 | Принятие приглашения | Игрок | Просмотр деталей события по инвайту и подтверждение участия |
 | Оценка | Оба | Выставление единой оценки 1-3 (в формате 💩 или ⭐) и комментариев |
 | Профиль | Оба | Настройки, переключение "стать тренером", кабинет тренера, архив уведомлений |
+
+---
+
+## 11. Нормализация экранных состояний (для FE/QA)
+
+Для каждого критичного экрана обязательно поддерживать:
+- `loading` — данные загружаются, действия недоступны.
+- `empty` — данных нет, есть понятный CTA следующего шага.
+- `error` — действие/загрузка неуспешны, есть причина и путь восстановления.
+- `success` — действие завершено, состояние UI синхронизировано с сервером.
+
+Для сценариев приглашений и назначения дополнительно обязательны terminal states:
+- `invite_expired` — приглашение просрочено, пользователь видит CTA "Запросить новый инвайт".
+- `invite_invalid` — ссылка некорректна/не существует, пользователь возвращается на Главную.
+- `time_conflict` — операция отклонена из-за пересечения времени, пользователь получает CTA "Выбрать другое время".
+- `cancelled` — событие отменено, отображается как завершенный негативный исход без активных CTA подтверждения.
+
+---
+
+## 12. Совместимость runtime-контракта
+
+- Для one-pager FE использует только event/invite endpoint-ы (`/events/*`, `/invites/*`) из `docs/03-api-spec.md`.
+- Внутреннее разложение на `slots/bookings/play-sessions` остается реализационной ответственностью BE и не влияет на экранные контракты.
+
+Copy-ожидания для terminal views:
+- `invite_expired`: `Срок приглашения истек`.
+- `invite_invalid`: `Приглашение недействительно`.
+- `time_conflict`: `Это время уже занято`.
+- `cancelled`: `Событие отменено`.

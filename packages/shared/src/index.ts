@@ -7,11 +7,15 @@ export * from './types/play-session';
 export * from './types/review';
 export * from './types/makeup-debt';
 export * from './types/notification';
+export * from './types/event';
+export * from './types/invite';
 export * from './types/api';
 
 export * from './enums/slot-status.enum';
 export * from './enums/slot-source.enum';
 export * from './enums/booking-status.enum';
+export * from './enums/event-status.enum';
+export * from './enums/invite-status.enum';
 export * from './enums/play-session-status.enum';
 export * from './enums/participant-status.enum';
 export * from './enums/makeup-status.enum';

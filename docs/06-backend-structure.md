@@ -16,7 +16,7 @@
 | class-transformer | latest | Трансформация DTO |
 | multer | latest | Загрузка файлов (фото локаций) |
 | uuid | latest | Генерация UUID |
-| `@nestjs/throttler` | latest | *(целевая модель)* лимиты на `POST /auth/*` |
+| `@nestjs/throttler` | latest | Лимиты на `POST /auth/*` |
 
 ## Расположение в монорепозитории
 
@@ -51,7 +51,7 @@ apps/api/
 │   │   │   └── pagination.dto.ts          # PaginationQueryDto, PaginatedResponseDto
 │   │   └── utils/
 │   │       ├── telegram-auth.util.ts      # Валидация Mini App initData (WebAppData + HMAC)
-│   │       ├── telegram-login-widget.util.ts  # Валидация Login Widget (SHA256(bot_token) + HMAC) — целевая модель
+│   │       ├── telegram-login-widget.util.ts  # Валидация Login Widget (SHA256(bot_token) + HMAC)
 │   │       └── invite-code.util.ts        # Генерация коротких invite-кодов
 │   ├── config/
 │   │   ├── database.config.ts             # TypeORM configuration
@@ -64,7 +64,7 @@ apps/api/
 │   │   │   ├── auth.service.ts            # Два входа → общий upsert + JWT
 │   │   │   ├── dto/
 │   │   │   │   ├── telegram-auth.dto.ts   # { initData: string } — Mini App
-│   │   │   │   ├── telegram-widget-auth.dto.ts  # поля виджета snake_case — целевая модель
+│   │   │   │   ├── telegram-widget-auth.dto.ts  # поля виджета snake_case
 │   │   │   │   └── auth-response.dto.ts   # { accessToken, user }
 │   │   │   └── strategies/
 │   │   │       └── jwt.strategy.ts        # Passport JWT strategy
@@ -163,8 +163,8 @@ apps/api/
 │       └── ...
 └── test/
     ├── app.e2e-spec.ts
-    ├── telegram-auth.util.spec.ts         # Mini App initData — целевая модель
-    ├── telegram-login-widget.util.spec.ts # Login Widget — целевая модель
+    ├── telegram-auth.util.spec.ts         # Mini App initData
+    ├── telegram-login-widget.util.spec.ts # Login Widget
     └── ...
 ```
 
@@ -206,9 +206,9 @@ graph TD
 
 ### AuthModule
 
-**Целевая ответственность** (см. [15-auth-dual-channel-architecture.md](15-auth-dual-channel-architecture.md)): два независимых входа Telegram → **один** `UsersService.upsert` → **один** формат JWT и ответа.
+**Ответственность** (см. [15-auth-dual-channel-architecture.md](15-auth-dual-channel-architecture.md)): два независимых входа Telegram → **один** `UsersService.upsert` → **один** формат JWT и ответа.
 
-**Текущая реализация (на момент синхронизации с доками):** в коде реализована ветка **Mini App** (`POST /auth/telegram`, `telegram-auth.util.ts`). Ветка **Login Widget** (`POST /auth/telegram/widget`, отдельный валидатор, DTO, тесты, rate limit) — по контракту `docs/03-api-spec.md`.
+**Обязательный runtime-контракт:** обе ветки (`POST /auth/telegram` и `POST /auth/telegram/widget`) поддерживаются и возвращают единый ответ по `docs/03-api-spec.md`.
 
 **Ключевая логика — Mini App (`initData`):**
 
@@ -330,6 +330,19 @@ async autoGenerateSlots() {
    - `isSplitOpen = true`
    - Слот становится видимым в поиске с пометкой "сплит"
 
+### Events Facade (обязательный слой one-pager)
+
+**Ответственность:** единый публичный контракт `/events/*` и `/invites/*` для FE one-pager.
+
+Базовые правила:
+- фасад не дублирует доменную логику, а оркестрирует `slots/bookings/invites/notifications`;
+- event `status` синхронизирован с доменными состояниями и Telegram push в одной транзакционной операции;
+- ошибки фасада возвращаются с машинным `code` согласно `docs/03-api-spec.md`.
+
+Совместимость:
+- существующие модули (`Slots`, `Bookings`, `PlaySessions`) сохраняются;
+- FE не зависит от внутренних доменных endpoint-ов для one-pager экрана `Главная`.
+
 ### PlaySessionsModule
 
 **Ответственность:** Самостоятельные игровые сессии, инвайт-ссылки.
@@ -436,6 +449,8 @@ throw new BadRequestException('Все места в слоте заняты');
 throw new ConflictException('Вы уже забронировали этот слот');
 throw new BadRequestException('Отзыв можно оставить только после завершённой тренировки');
 ```
+
+Для endpoint-ов `/events/*` и `/invites/*` `HttpException` дополнительно включает машинный `code` (например `EVENT_TIME_CONFLICT`, `INVITE_EXPIRED`).
 
 ## Guards и Decorators
 
