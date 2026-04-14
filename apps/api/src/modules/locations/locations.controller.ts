@@ -16,7 +16,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { v4 as uuid } from 'uuid';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { CoachOnly } from '../../common/decorators/coach-only.decorator';
+import { CoachGuard } from '../../common/guards/coach.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { LocationsService } from './locations.service';
@@ -28,8 +28,7 @@ import { UserEntity } from '../users/entities/user.entity';
 const uploadDir = process.env.UPLOAD_DIR || './uploads';
 
 @Controller('locations')
-@UseGuards(JwtAuthGuard)
-@CoachOnly()
+@UseGuards(JwtAuthGuard, CoachGuard)
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 

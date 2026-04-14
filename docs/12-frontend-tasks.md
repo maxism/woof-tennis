@@ -1,195 +1,122 @@
-# WoofTennis — Набор задач для Frontend (monorepo)
+# WoofTennis — Набор задач для Frontend (IA vNext)
 
 ## Цель
 
-Подготовить `apps/web` к реализации обновленного UI/UX:
-- русский интерфейс как основной;
-- английский как комплиментарный (через словарь);
-- полная поддержка light/dark;
-- минималистичный визуальный стиль без перегрузки.
+Подготовить `apps/web` к новой модели UX:
+- нижняя навигация: `Главная` + `Профиль`;
+- основной сценарий создания через CTA `Создать` на Главной;
+- назначение игрока в тренировку через `direct-attach` или `invite`;
+- локации как сквозная сущность с фильтром в сетке.
 
-## Область работ в монорепозитории
+## Scope (монорепо)
 
-- `apps/web` — реализация UI, страниц, компонентов, тем, локализации.
-- `packages/shared` — общие типы/enum/константы, которые нужны фронтенду.
-- `apps/api` — не в прямом скоупе фронтенд-задач, но учитывать контрактные зависимости.
+- `apps/web` — UI, страницы, состояние, маршруты и взаимодействия.
+- `packages/shared` — новые DTO/enum для event-centric модели.
+- `apps/api` — контрактная зависимость (вне прямого FE-скоупа).
 
 ---
 
-## Эпик A — Foundation UI (apps/web)
+## Волна 1 — Core Flow
 
-### A1. Theme layer (light/dark)
-**Файлы:**
-- `apps/web/src/styles/globals.css`
-- `apps/web/tailwind.config.ts`
-
-**Задачи:**
-- Добавить дизайн-токены для двух тем (фон, текст, secondary, border, success/warn/danger).
-- Привязать токены к `themeParams` Telegram и предусмотреть fallback.
-- Проверить контрастность текста и интерактивных элементов в обеих темах.
-
-**Критерий готовности:**
-- Любой экран корректно отображается и в светлой, и в темной теме без ручных правок на уровне компонентов.
-
-### A2. Базовый UI-kit в минималистичном стиле
-**Файлы:**
-- `apps/web/src/components/ui/Button.tsx`
-- `apps/web/src/components/ui/Card.tsx`
-- `apps/web/src/components/ui/Input.tsx`
-- `apps/web/src/components/ui/Badge.tsx`
-- `apps/web/src/components/ui/PageHeader.tsx`
-
-**Задачи:**
-- Обновить варианты компонентов под минималистичный стиль (без тяжелых теней/шумных обводок).
-- Унифицировать размеры, отступы, радиусы.
-- Добавить состояния: default/hover/active/disabled/error.
-
-**Критерий готовности:**
-- Компоненты единообразно выглядят на всех ключевых экранах.
-
-### A3. Navigation shell
+### FE-1. Обновить shell навигации
 **Файлы:**
 - `apps/web/src/components/layout/AppLayout.tsx`
 - `apps/web/src/components/layout/TabBar.tsx`
 - `apps/web/src/components/layout/RoleSwitch.tsx`
 
 **Задачи:**
-- Привести таб-бар и переключатель ролей к новым макетам.
-- Обеспечить визуальную простоту: не более 1 активного акцента на экран.
-- Проверить читаемость русских лейблов в узких ширинах.
+- Перевести tabbar на 2 пункта: `Главная`, `Профиль`.
+- Удалить отдельные tab-входы `Тренеры`, `Игра`, `Уведомления`.
+- Добавить primary CTA `Создать` на `HomePage`.
 
----
-
-## Эпик B — Локализация (RU primary, EN complementary)
-
-### B1. Единый словарь UI-строк
-**Файлы:**
-- `apps/web/src/utils/i18n.ts`
-
-**Задачи:**
-- Разделить словари на `ru` (основной) и `en` (комплиментарный).
-- Зафиксировать нейминг ключей по доменам (`nav`, `booking`, `review`, `notification` и т.д.).
-- Добавить fallback стратегию: `requested locale -> ru -> key`.
-
-### B2. Миграция hardcoded-строк
-**Файлы:**
-- Все страницы/компоненты в `apps/web/src/pages/**` и `apps/web/src/components/**`
-
-**Задачи:**
-- Убрать hardcoded UI-строки, заменить на обращения к словарю.
-- Проверить, что ошибки, empty-state и подписи кнопок берутся из i18n.
-
-**Критерий готовности:**
-- В `apps/web` не осталось пользовательских строк вне i18n (кроме test fixtures).
-
----
-
-## Эпик C — Реализация ключевых экранов из артефактов
-
-### C1. Dashboard
+### FE-2. Главная как единая сетка событий
 **Файлы:**
 - `apps/web/src/pages/Home/HomePage.tsx`
+- `apps/web/src/components/booking/BookingList.tsx`
 - `apps/web/src/components/booking/BookingCard.tsx`
 
 **Задачи:**
-- Привести экран к `docs/11-design-artifacts.md` (`wooftennis-dashboard-v2.png`).
-- Поддержать компактные карточки, короткие статусы, минимальный шум.
-- Добавить корректные empty/loading/error состояния.
+- Показ событий по времени для контекста игрока/тренера.
+- Сегмент `Как игрок` / `Как тренер` для dual-role.
+- Фильтр по локациям (owned + shared).
 
-### C2. Coach Profile + Slot Picker
+### FE-3. Сценарий создания события
 **Файлы:**
-- `apps/web/src/pages/Player/CoachProfilePage.tsx`
-- `apps/web/src/components/booking/SlotPicker.tsx`
-
-**Задачи:**
-- Реализовать простую сетку слотов и статусы (`свободен`, `занят`, `сплит`).
-- Сохранить фокус на выборе слота без перегруженных элементов.
-
-### C3. Review Form
-**Файлы:**
-- `apps/web/src/pages/Reviews/ReviewFormPage.tsx`
-- `apps/web/src/components/review/RatingPicker.tsx`
-
-**Задачи:**
-- Привести форму оценки к минималистичной структуре.
-- Сделать выбор рейтингов интуитивным и доступным (a11y labels).
-
-### C4. New Play Session
-**Файлы:**
-- `apps/web/src/pages/Play/NewSessionPage.tsx`
+- `apps/web/src/pages/Play/CreateEventPage.tsx`
+- `apps/web/src/components/play/SessionCard.tsx`
 - `apps/web/src/components/play/InviteLinkShare.tsx`
 
 **Задачи:**
-- Линейная форма без лишних блоков.
-- Ясная воронка: ввод данных -> создание -> шаринг ссылки.
+- Универсальная форма: разовое или периодическое событие.
+- Выбор локации и участника.
+- Два исхода после создания: `direct-attach` или генерация invite.
 
-### C5. Coach Schedule
+### FE-4. Профиль как хаб вторичных сценариев
 **Файлы:**
-- `apps/web/src/pages/Coach/SchedulePage.tsx`
-- `apps/web/src/components/schedule/WeekView.tsx`
-- `apps/web/src/components/schedule/SlotCard.tsx`
-
-**Задачи:**
-- Компактная недельная сетка + легенда статусов.
-- Проверить скролл/читаемость на узких экранах.
-
-### C6. Notifications
-**Файлы:**
+- `apps/web/src/pages/Profile/ProfilePage.tsx`
 - `apps/web/src/pages/Notifications/NotificationsPage.tsx`
-- `apps/web/src/components/notification/NotificationCard.tsx`
 
 **Задачи:**
-- Реализовать ultra-clean список уведомлений.
-- Упростить визуал, оставить только приоритетную информацию.
+- Раздел `Кабинет тренера` (локации, расписание, отыгрыши).
+- Раздел `Уведомления` внутри профиля.
+- Ясные ссылки на вторичные экраны без дублирования главной логики.
+
+### FE-5. Базовые состояния и локализация
+**Файлы:**
+- `apps/web/src/utils/i18n.ts`
+- `apps/web/src/components/ui/*`
+
+**Задачи:**
+- Добавить ключи для новых статусов и CTA.
+- Выдержать RU-primary, EN-fallback.
+- Проверить light/dark на обновленных экранах.
 
 ---
 
-## Эпик D — Shared contracts (packages/shared)
+## Волна 2 — Edge Cases and Quality
 
-### D1. UI-константы статусов и лейблов
+### FE-6. Обработка edge-cases invite/direct-attach
 **Файлы:**
-- `packages/shared/src/constants/*`
+- `apps/web/src/pages/Player/InviteAcceptPage.tsx`
+- `apps/web/src/pages/Player/EventDetailPage.tsx`
+- `apps/web/src/hooks/useBookings.ts`
+
+**Задачи:**
+- Невалидный/просроченный invite.
+- Конфликт времени при принятии.
+- Игрок уже прикреплен к другому событию.
+
+### FE-7. Модели и типы shared
+**Файлы:**
+- `packages/shared/src/types/*`
+- `packages/shared/src/enums/*`
 - `packages/shared/src/index.ts`
 
 **Задачи:**
-- Добавить/актуализировать константы для статусов, которые повторяются в web/api.
-- Переиспользовать enum из shared в компонентных маппингах фронта.
+- Зафиксировать event-centric DTO: EventCard, InviteState, AttachStatus.
+- Привести UI маппинги к enum/shared-константам.
 
-### D2. Типы DTO для экранов
+### FE-8. QA-ready polish
 **Файлы:**
-- `packages/shared/src/types/*`
+- `apps/web/src/pages/**`
+- `apps/web/src/components/**`
 
 **Задачи:**
-- Проверить, что типы покрывают новые UI-представления (dashboard cards, notifications item model, review form state).
-- При расширении типов обновить barrel export.
+- Empty/loading/error на каждом критичном экране.
+- Ревью доступности CTA и коротких русских лейблов.
+- Смоук по главным сценариям из `docs/04-user-flows.md`.
 
 ---
 
-## Эпик E — Качество и приемка
+## Критерии приемки
 
-### E1. Проверки перед merge
-- `npm run lint --workspace=@wooftennis/web`
-- `npm run build --workspace=@wooftennis/web`
-- Smoke-проверка главных сценариев из `docs/04-user-flows.md`.
+- Пользователь без обучения понимает разницу: `Главная = видеть и управлять текущим`, `Создать = инициировать новое`.
+- Сценарии `direct-attach` и `invite` работают предсказуемо и имеют понятные статусы.
+- Уведомления доступны в профиле и дублируются в Telegram без потери информации.
+- Для dual-role не возникает переключений навигации и потери контекста.
 
-### E2. UI QA checklist
-- Все ключевые экраны совпадают с артефактами из `docs/11-design-artifacts.md`.
-- Для light/dark нет "сломанных" контрастов.
-- Русская локаль полная; английская доступна как fallback.
-- Нет визуальной перегрузки: один главный action, читаемые отступы, короткие подписи.
+## Зависимости от API/архитектуры
 
----
-
-## Предлагаемый порядок выполнения
-
-1. A1 -> A2 -> B1  
-2. C1/C2/C6 (основные пользовательские потоки)  
-3. C3/C4/C5  
-4. B2 + D1/D2  
-5. E1/E2
-
-## Зависимости от архитектора/бэкенда
-
-- Подтверждение финальных enum/DTO в `@wooftennis/shared`.
-- Подтверждение формата серверных ошибок на русском (без регрессий в API).
-- Согласование, какие строки остаются в TG MainButton, а какие дублируются в интерфейсе.
+- Подтвержден единый контракт event-centric endpoint-ов.
+- Подтверждены коды ошибок для invite/attach конфликтов.
+- Согласованы финальные DTO/enum в `@wooftennis/shared`.

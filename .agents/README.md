@@ -6,6 +6,7 @@
 - `PM-COORDINATOR.md` — project/product manager-координатор
 - `TASKS-FORMAT.md` — стандарт постановки задач ролям в Markdown
 - `ISSUES-TRACKER.md` — стандарт учета OPEN/CLOSED проблем
+- `BACKLOG-GROOMING.md` — политика груминга и архивирования контекста
 - `FE-DEV.md` — фронтенд агент
 - `BE-DEV.md` — бэкенд агент
 - `ARCHITECT.md` — архитектор
@@ -23,6 +24,7 @@
 
 Для постановок ролям использовать `.agents/tasks/*.md` по формату из `.agents/TASKS-FORMAT.md`.
 Учет проблем вести в `.agents/issues/ISSUES.md` по правилам `.agents/ISSUES-TRACKER.md`.
+Периодический груминг и перенос завершенного контекста делать по `.agents/BACKLOG-GROOMING.md`.
 
 ## Готовые шаблоны промптов
 

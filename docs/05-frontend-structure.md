@@ -73,16 +73,16 @@ apps/web/
     │   │   ├── SlotDetailPage.tsx  # Детали слота (бронирования)
     │   │   └── ManualSlotPage.tsx  # Ручное создание слота
     │   ├── Player/
-    │   │   ├── SearchPage.tsx      # Поиск тренеров
-    │   │   ├── CoachProfilePage.tsx# Профиль тренера + доступные слоты
-    │   │   └── BookingDetailPage.tsx# Детали бронирования
+    │   │   ├── InviteAcceptPage.tsx # Принятие приглашения по инвайту
+    │   │   ├── EventDetailPage.tsx  # Детали события (игрок)
+    │   │   └── MyGamesPage.tsx      # Самостоятельные игры игрока (лист/архив)
     │   ├── Play/
-    │   │   ├── NewSessionPage.tsx  # Создание игровой сессии
-    │   │   └── JoinSessionPage.tsx # Просмотр + присоединение по инвайту
+    │   │   ├── CreateEventPage.tsx # Универсальный сценарий создания через CTA
+    │   │   └── JoinSessionPage.tsx # Legacy-инвайты/совместимость
     │   ├── Reviews/
     │   │   └── ReviewFormPage.tsx  # Оценка после тренировки
     │   └── Notifications/
-    │       └── NotificationsPage.tsx
+    │       └── NotificationsPage.tsx # Архив в профиле (без отдельного таба)
     ├── components/                 # Переиспользуемые компоненты
     │   ├── auth/
     │   │   └── TelegramLoginWidget.tsx  # Login Widget (веб-канал)
@@ -143,7 +143,7 @@ apps/web/
     <Route path="/" element={<AppLayout />}>
       <Route index element={<HomePage />} />
       <Route path="profile" element={<ProfilePage />} />
-      <Route path="notifications" element={<NotificationsPage />} />
+      <Route path="profile/notifications" element={<NotificationsPage />} />
 
       {/* Тренер (guard: isCoach) */}
       <Route path="coach">
@@ -159,14 +159,14 @@ apps/web/
 
       {/* Игрок */}
       <Route path="player">
-        <Route path="search" element={<SearchPage />} />
-        <Route path="coach/:id" element={<CoachProfilePage />} />
-        <Route path="booking/:id" element={<BookingDetailPage />} />
+        <Route path="invite/:code" element={<InviteAcceptPage />} />
+        <Route path="event/:id" element={<EventDetailPage />} />
+        <Route path="games" element={<MyGamesPage />} />
       </Route>
 
-      {/* Самостоятельная игра */}
+      {/* Создание через CTA на Главной */}
       <Route path="play">
-        <Route path="new" element={<NewSessionPage />} />
+        <Route path="create" element={<CreateEventPage />} />
         <Route path=":inviteCode" element={<JoinSessionPage />} />
       </Route>
 
@@ -179,29 +179,18 @@ apps/web/
 
 ## Нижняя навигация (TabBar)
 
-Адаптируется в зависимости от роли пользователя:
-
-**Только игрок (isCoach = false):**
+Для MVP навигация упрощена и не меняется по роли:
 
 | Иконка | Лейбл | Маршрут |
 |---|---|---|
-| Calendar | Мои тренировки | `/` |
-| Search | Тренеры | `/player/search` |
-| Tennis | Игра | `/play/new` |
-| Bell | Уведомления | `/notifications` |
+| Calendar | Главная | `/` |
 | User | Профиль | `/profile` |
 
-**Тренер + Игрок (isCoach = true):**
-
-| Иконка | Лейбл | Маршрут |
-|---|---|---|
-| Calendar | Расписание | `/` |
-| MapPin | Локации | `/coach/locations` |
-| Search | Тренеры | `/player/search` |
-| Bell | Уведомления | `/notifications` |
-| User | Профиль | `/profile` |
-
-На главном экране (дашборде) для dual-role пользователей используется сегментированный контрол (табы): "Как игрок" / "Как тренер".
+Ключевые правила:
+- На `Главной` всегда есть primary CTA `Создать`.
+- `Игра` и `Тренеры` убраны из tabbar: создание/назначение теперь идет через CTA и сценарии invite/direct-attach.
+- `Уведомления` перенесены в `Профиль -> Уведомления` (`/profile/notifications`) и дублируются в Telegram.
+- Для dual-role пользователей сохраняется сегментированный контрол "Как игрок" / "Как тренер" на Главной.
 
 ## Стейт-менеджмент
 

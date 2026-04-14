@@ -34,7 +34,8 @@ wooftennis/
 │   ├── ...
 │   ├── 10-monorepo-structure.md
 │   ├── 11-design-artifacts.md
-│   └── 12-frontend-tasks.md
+│   ├── 12-frontend-tasks.md
+│   └── 17-ux-pm-brief.md
 ├── .github/
 │   └── workflows/
 │       └── ci.yml               # GitHub Actions

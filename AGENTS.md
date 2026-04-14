@@ -6,6 +6,7 @@
 1. Прочитать `.agents/README.md`
 2. Прочитать `.agents/COMMON.md`
 2.1. Прочитать `.agents/ISSUES-TRACKER.md` (если задача связана с дефектами/рисками)
+2.2. Прочитать `.agents/BACKLOG-GROOMING.md` (если задача связана с чисткой backlog/архивированием контекста)
 3. Прочитать ролевой файл:
    - PM Coordinator: `.agents/PM-COORDINATOR.md`
    - FE: `.agents/FE-DEV.md`
