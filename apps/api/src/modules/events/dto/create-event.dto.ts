@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsOptional, IsUUID, ValidateIf } from 'class-validator';
+import { IsBoolean, IsDate, IsOptional, IsUUID, ValidateIf } from 'class-validator';
 
 export class CreateEventDto {
   @IsUUID('4')
@@ -16,4 +16,8 @@ export class CreateEventDto {
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
   recurrence?: null;
+
+  @IsOptional()
+  @IsBoolean()
+  isRecurring?: boolean;
 }

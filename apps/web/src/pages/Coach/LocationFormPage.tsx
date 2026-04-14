@@ -13,9 +13,17 @@ export function LocationFormPage() {
   const qc = useQueryClient();
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [description, setDescription] = useState('');
+  const [website, setWebsite] = useState('');
 
   const save = useMutation({
-    mutationFn: () => createLocation({ name: name.trim(), address: address.trim() }),
+    mutationFn: () =>
+      createLocation({
+        name: name.trim(),
+        address: address.trim(),
+        description: description.trim(),
+        website: website.trim(),
+      }),
     onSuccess: () => {
       toast.success(t('common', 'save'));
       void qc.invalidateQueries({ queryKey: ['locations', 'mine'] });
@@ -48,6 +56,18 @@ export function LocationFormPage() {
           label={t('location', 'address')}
           value={address}
           onChange={(e) => setAddress(e.target.value)}
+          maxLength={500}
+        />
+        <Input
+          label={t('location', 'description')}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          maxLength={3000}
+        />
+        <Input
+          label={t('location', 'website')}
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
           maxLength={500}
         />
         <div className="mt-2 flex gap-2">

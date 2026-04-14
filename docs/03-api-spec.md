@@ -77,14 +77,46 @@ Authorization: Bearer <jwt_token>
 
 ```json
 {
-  "locationId": "uuid",
-  "startsAt": "2026-04-20T09:00:00Z",
-  "endsAt": "2026-04-20T10:00:00Z",
+  "location": {
+    "mode": "existing",
+    "locationId": "uuid"
+  },
+  "startsAtLocal": "2026-04-20T12:00",
+  "timezone": "Europe/Moscow",
+  "durationMinutes": 60,
   "recurrence": null
 }
 ```
 
 **Response 201:** `Event` со статусом `draft`.
+
+**Location selector contract:**
+- `location.mode = existing` + `locationId` — выбор существующей локации тренера;
+- `location.mode = create` + `name/address` — inline-создание локации в том же flow, без отдельного перехода на экран локаций;
+- при `mode=create` backend сначала создает `Location`, затем создает `Event`, и в ответе `Event.locationId` уже содержит новый `id`.
+
+**Datetime & calendar semantics:**
+- FE отправляет `startsAtLocal` (без `Z`) и `timezone`; backend конвертирует в UTC (`startsAt`, `endsAt`) и хранит UTC;
+- `durationMinutes` обязательный (`30 | 60 | 90 | 120 | 150 | 180`), `endsAt` вычисляется сервером;
+- событие не может начинаться в прошлом относительно `timezone`;
+- если слот пересекается с другим событием тренера/игрока, backend возвращает `409` + `code=EVENT_TIME_CONFLICT`.
+
+**Recurrence (MVP):**
+- `recurrence = null` — разовое событие;
+- для периодического события:
+
+```json
+{
+  "frequency": "weekly",
+  "interval": 1,
+  "byWeekday": [1, 3],
+  "untilDate": "2026-06-30"
+}
+```
+
+- поддерживается только `frequency=weekly`, `interval` 1..4, `byWeekday` 0..6;
+- backend materializes серию как набор независимых Event, связанные `recurrenceGroupId`;
+- если часть серии конфликтует, backend создает только валидные экземпляры и возвращает `warnings` с датами пропуска (не 4xx).
 
 ### POST `/events/:eventId/attach-player` `[Coach]`
 
@@ -109,15 +141,46 @@ Authorization: Bearer <jwt_token>
 
 Создать или переиздать инвайт.
 
+**Request Body:**
+
+```json
+{
+  "targets": [
+    { "telegramName": "@known_player" },
+    { "telegramName": "@new_player" }
+  ],
+  "expiresInHours": 24
+}
+```
+
 **Response 200:**
 
 ```json
 {
-  "inviteId": "uuid",
-  "code": "abc123",
-  "expiresAt": "2026-04-19T09:00:00Z"
+  "invites": [
+    {
+      "inviteId": "uuid",
+      "code": "abc123",
+      "expiresAt": "2026-04-19T09:00:00Z",
+      "telegramName": "@known_player",
+      "resolvedUserId": "uuid"
+    },
+    {
+      "inviteId": "uuid",
+      "code": "def456",
+      "expiresAt": "2026-04-19T09:00:00Z",
+      "telegramName": "@new_player",
+      "resolvedUserId": null
+    }
+  ]
 }
 ```
+
+**Invite by Telegram name semantics:**
+- `telegramName` нормализуется: trim + lowercase, допустим ввод с `@` или без;
+- для известных пользователей (`resolvedUserId != null`) FE может дополнительно показывать avatar/name из autosuggest;
+- для неизвестных `telegramName` invite все равно создается (`resolvedUserId = null`) и отрабатывает через TG bot flow при первом открытии ссылки; **FE не обязан** показывать отдельный CTA «пригласить через бота» — достаточно отправки списка целей на API, доставка приглашения — в Telegram;
+- дубли внутри `targets` после нормализации запрещены (`400`).
 
 ### GET `/invites/:code`
 
@@ -173,6 +236,12 @@ Authorization: Bearer <jwt_token>
 Завершить событие.
 
 **Response 200:** `Event` со статусом `completed`.
+
+### FE/BE responsibility split (event create + invite)
+
+- FE отвечает за UX (autocomplete, chips, calendar controls) и отправляет только контрактные поля без локальной бизнес-валидации конфликтов.
+- BE отвечает за источник истины по времени/таймзоне/пересечениям, нормализацию `telegramName`, резолв известных пользователей и создание invite для неизвестных.
+- FE может делать pre-check UX (например disabled submit), но любой окончательный reject/accept определяется ответом API.
 
 ---
 
@@ -354,7 +423,8 @@ Authorization: Bearer <jwt_token>
 Основной user-facing сценарий: фронт передаёт nickname, а не UUID.
 
 **Query params:**
-- `username` (string, required) — можно с `@` или без (`@ivan_tennis` / `ivan_tennis`)
+- `query` (string, required) — префикс поиска по `username`/telegram name, можно с `@` или без (`@ivan_tennis` / `ivan_tennis`)
+- `limit` (number, optional, default `10`, max `20`)
 
 **Response 200:**
 
@@ -374,6 +444,7 @@ Authorization: Bearer <jwt_token>
 **Поведение:**
 - если username не найден/скрыт у пользователя — возвращается пустой массив `[]`;
 - в выдаче только публичные поля (без `telegramId` и внутренних данных).
+- endpoint используется для autosuggest при мультивыборе invite targets; FE не блокирует отправку неизвестных имен, даже если endpoint вернул `[]`.
 
 ---
 

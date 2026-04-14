@@ -56,15 +56,25 @@ export function ProfilePage() {
       ) : null}
       <div className="mt-6">
         <p className="mb-2 text-sm font-medium text-tg-hint">{t('profile', 'accountRole')}</p>
-        <Button
-          variant="secondary"
-          className="w-full"
+        <button
+          type="button"
           disabled={toggleCoach.isPending}
           onClick={() => toggleCoach.mutate()}
+          className="flex w-full items-center justify-between rounded-xl border border-woof-border bg-tg-secondary-bg px-4 py-3 text-left text-tg-text disabled:opacity-50"
         >
-          {user.isCoach ? t('roles', 'asCoach') : t('roles', 'enableCoach')} —{' '}
-          {user.isCoach ? 'Выкл' : 'Вкл'}
-        </Button>
+          <span>{t('profile', 'coachMode')}</span>
+          <span
+            className={`inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              user.isCoach ? 'bg-woof-accent' : 'bg-woof-border'
+            }`}
+          >
+            <span
+              className={`h-5 w-5 transform rounded-full bg-white transition-transform ${
+                user.isCoach ? 'translate-x-5' : 'translate-x-1'
+              }`}
+            />
+          </span>
+        </button>
       </div>
       <Card className="mt-4">
         <p className="text-sm font-medium text-tg-hint">{t('profile', 'coachCabinet')}</p>

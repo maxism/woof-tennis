@@ -20,12 +20,21 @@
 - `assets/wooftennis-schedule-v2.png`
 - `assets/wooftennis-notifications-v2.png`
 
+Pre-auth web landing (дизайн-спека):
+- `docs/19-web-landing-preauth-design.md`
+
 ## Статус артефактов для IA vNext (важно для FE/QA)
 - Source of truth для Wave 1: `wooftennis-dashboard-v2`, `wooftennis-newgame-v2`, `wooftennis-booking-v2`, `wooftennis-schedule-v2`.
 - `wooftennis-notifications-v2` используется как экран раздела внутри `Профиль`, не как отдельный tab.
 - Отдельные визуальные паттерны для удаленных табов (`Тренеры`, `Игра`, `Уведомления` в нижней навигации) считаются устаревшими для MVP IA vNext.
 
 ## Что отражают артефакты
+
+### 0) Веб-лендинг до авторизации (`docs/19-web-landing-preauth-design.md`)
+- Дружелюбный pre-auth экран для web (до Login Widget авторизации).
+- Один главный CTA: `Войти через Telegram`.
+- RU-first копирайт и минималистичная иерархия.
+- Обязательные состояния: `loading`, `widget_error`, `auth_in_progress`.
 
 ### 1) Дашборд (`wooftennis-dashboard-v2.png`)
 - Табы ролей: `Как игрок` / `Как тренер`.
@@ -49,6 +58,11 @@
 - Линейная форма без декоративного шума.
 - Явный пользовательский путь: заполнить -> `direct-attach` или `invite`.
 - Все тексты на русском, структура пригодна для i18n.
+- Локация задается selector-компонентом; при отсутствии варианта внутри selector доступен CTA `Создать локацию`.
+- Форма создания локации из этого flow: `Название`, `Адрес`, `Описание`, `Фото`, `Сайт`.
+- Поля времени: `Начало` и `Окончание` с календарным date-time picker UX (не raw ID/timestamp controls).
+- Есть явный toggle `Повторять событие` (`isRecurring`).
+- Блок игроков использует multiselect с TG username и autosuggest по базе; для неизвестных имён инвайт создаётся как обычно, **доставка приглашения — в Telegram**, без обязательного отдельного CTA в форме.
 
 ### 5) Расписание тренера (`wooftennis-schedule-v2.png`)
 - Компактная недельная сетка.
@@ -82,6 +96,7 @@
 - Для каждого ключевого экрана фиксируются `loading`, `empty`, `error`, `success`.
 - Для invite/direct-attach дополнительно фиксируются терминальные состояния: `invite_expired`, `invite_invalid`, `time_conflict`, `cancelled`.
 - FE не добавляет новые визуальные статусы без обновления этого документа и `docs/17-ux-pm-brief.md`.
+- Для экрана профиля переключатель роли тренера подписывается как `Режим тренера` и визуально отображается как switch/toggle.
 
 ## Связанные документы
 

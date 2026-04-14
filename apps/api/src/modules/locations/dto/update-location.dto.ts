@@ -12,6 +12,16 @@ export class UpdateLocationDto {
   address?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  website?: string;
+
+  @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 }

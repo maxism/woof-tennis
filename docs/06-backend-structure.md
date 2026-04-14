@@ -343,6 +343,12 @@ async autoGenerateSlots() {
 - существующие модули (`Slots`, `Bookings`, `PlaySessions`) сохраняются;
 - FE не зависит от внутренних доменных endpoint-ов для one-pager экрана `Главная`.
 
+Обязательные контрактные обязанности backend в create/invite flow:
+- **location inline path:** `POST /events` принимает `location.mode=create` и атомарно выполняет `create location -> create event`;
+- **calendar-time canonicalization:** принимает `startsAtLocal + timezone + durationMinutes`, вычисляет UTC-границы события и валидирует пересечения;
+- **recurrence materialization:** weekly-правило разворачивается в серию event-ов с `recurrenceGroupId`, без падения всей операции при частичных конфликтах;
+- **invite by tg names:** `POST /events/:eventId/invite` принимает массив `telegramName`; для неизвестных имен создает invite c `resolvedUserId=null`, чтобы TG bot flow мог завершить привязку позже.
+
 ### PlaySessionsModule
 
 **Ответственность:** Самостоятельные игровые сессии, инвайт-ссылки.
@@ -499,6 +505,17 @@ export class CoachGuard implements CanActivate {
 - `@CoachOnly()` на coach-only маршрутах.
 
 Нельзя размывать контракт (например, заменять role-ошибку пустым `200 []`), иначе FE/QA теряют единый source of truth.
+
+### Validation semantics for event create/invite
+
+- `400` — невалидный payload (`timezone`, `durationMinutes`, `recurrence`, пустой `targets`, дубли `telegramName`);
+- `403` — coach-only запрет;
+- `404` — `eventId` не найден (`EVENT_NOT_FOUND`);
+- `409` — календарный конфликт времени (`EVENT_TIME_CONFLICT`) или недоступность слота (`EVENT_NOT_AVAILABLE`).
+
+Нормализация Telegram имен:
+- trim, lowercase, удалить ведущий `@`, хранить/возвращать в каноническом виде с `@`;
+- одинаковые имена после нормализации считаются дубликатом в рамках одного запроса invite.
 
 ### @CurrentUser()
 

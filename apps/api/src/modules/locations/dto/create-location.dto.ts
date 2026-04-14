@@ -10,4 +10,12 @@ export class CreateLocationDto {
   @IsString()
   @MaxLength(500)
   address: string;
+
+  @IsString()
+  @MaxLength(3000)
+  description: string;
+
+  @IsString()
+  @MaxLength(500)
+  website: string;
 }

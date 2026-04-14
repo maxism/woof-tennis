@@ -179,6 +179,11 @@ apps/web/
 </BrowserRouter>
 ```
 
+**Routing contract fix (coach cabinet):**
+- пункт `Локации` в `Профиль -> Кабинет тренера` всегда ведет на `/coach/locations`;
+- переход на `/profile/coach/locations` считается legacy и должен редиректиться на `/coach/locations`;
+- FE не должен собирать путь вручную строкой, только через централизованную константу route.
+
 ## Нижняя навигация (TabBar)
 
 Для MVP навигация упрощена и не меняется по роли:
@@ -225,6 +230,12 @@ interface UIState {
   setActiveRole: (role: 'player' | 'coach') => void;
 }
 ```
+
+**Coach mode toggle contract (copy + behavior):**
+- label: `Режим тренера` (вместо action-copy `Стать тренером`);
+- toggle `off -> on` отправляет `PATCH /users/me { isCoach: true }`, после успеха переключает `activeRole='coach'`;
+- toggle `on -> off` меняет только UI контекст (`activeRole='player'`) и не отправляет `isCoach:false` для MVP;
+- если у пользователя `isCoach=false`, coach-секции в профиле показывают CTA `Включить режим тренера`.
 
 ### Server State (TanStack Query)
 
@@ -280,6 +291,14 @@ apiClient.interceptors.response.use(
 - `locations` — вызывать только при `activeRole === 'coach'`; query: только `isActive` (если нужен фильтр).
 - `play-sessions/my` — всегда использовать контракт пагинации (`page`, `limit`) и ожидать `PaginatedResponse` (`items`, `total`, `page`, `limit`) как в `docs/03-api-spec.md`.
 - `events/my` — всегда передавать `role`, `dateFrom`, `dateTo`; для фильтра локации использовать только `locationId`.
+
+## Event Create UX contract (FE responsibility)
+
+- **Location selector + create path:** в `CreateEventPage` локация выбирается только через selector (без raw ID); при отсутствии нужной локации доступен путь `Создать локацию`.
+- **Create location fields:** форма создания локации в этом flow содержит `name`, `address`, `description`, `photo`, `website`.
+- **Datetime UX (calendar pattern):** использовать user-friendly поля `Начало` и `Окончание` (дата+время) с поведением в стиле Google/Apple Calendar: выбор даты и старта первым шагом, затем автоподстановка окончания с возможностью ручной корректировки.
+- **Recurring option:** в форме есть явный toggle `Повторять событие` (`isRecurring`) и базовые настройки повторов.
+- **Invite multiselect:** поле принимает несколько TG-имен, autosuggest строится по БД; для неизвестных имён инвайт всё равно создаётся, **уведомление/доставка — через Telegram**; отдельный per-user CTA в UI не обязателен.
 
 ## Двухканальная авторизация (Mini App и веб)
 

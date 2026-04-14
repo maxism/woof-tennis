@@ -5,6 +5,8 @@ import { buildSafeQuery } from './safeQuery';
 export interface CreateLocationBody {
   name: string;
   address: string;
+  description: string;
+  website: string;
 }
 
 const LOCATION_QUERY_KEYS = ['isActive'] as const;

@@ -341,6 +341,20 @@ flowchart TD
 | Оценка | Оба | Выставление единой оценки 1-3 (в формате 💩 или ⭐) и комментариев |
 | Профиль | Оба | Настройки, переключение "стать тренером", кабинет тренера, архив уведомлений |
 
+## 13. Профиль: coach cabinet routing contract
+
+```mermaid
+flowchart LR
+    A[Профиль] --> B[Кабинет тренера]
+    B --> C[Локации]
+    C --> D[/coach/locations]
+    E[/profile/coach/locations (legacy)] --> D
+```
+
+- Единственный целевой маршрут для пункта `Локации`: `/coach/locations`.
+- Legacy-маршрут `/profile/coach/locations` допускается только как redirect-source.
+- Этот контракт обязателен для FE routing и QA smoke.
+
 ---
 
 ## 11. Нормализация экранных состояний (для FE/QA)

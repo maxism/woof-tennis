@@ -38,6 +38,8 @@ export class LocationsService {
       coachId,
       name: dto.name,
       address: dto.address,
+      description: dto.description.trim() || null,
+      website: dto.website.trim() || null,
       photoUrl: photoUrl || null,
     });
     return this.locationRepo.save(location);

@@ -29,6 +29,12 @@ export class LocationEntity {
   @Column({ type: 'varchar', length: 500 })
   address: string;
 
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  website: string | null;
+
   @Column({ type: 'varchar', length: 500, nullable: true })
   photoUrl: string | null;
 

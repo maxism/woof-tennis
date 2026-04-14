@@ -9,6 +9,7 @@ import { SlotEntity } from '../schedule/slots/entities/slot.entity';
 import { UserEntity } from '../users/entities/user.entity';
 import { AttachPlayerDto } from './dto/attach-player.dto';
 import { CreateEventDto } from './dto/create-event.dto';
+import { CreateEventInviteDto } from './dto/create-event-invite.dto';
 import { EventRoleQuery, QueryMyEventsDto } from './dto/query-my-events.dto';
 import { RescheduleEventDto } from './dto/reschedule-event.dto';
 import { EventInviteEntity } from './entities/event-invite.entity';
@@ -150,10 +151,11 @@ export class EventsFacadeService {
     return this.toEventDto(slot, booking, await this.getLatestInvite(slot.id), EventStatus.Attached);
   }
 
-  async createOrReissueInvite(eventId: string, coach: UserEntity) {
+  async createOrReissueInvite(eventId: string, coach: UserEntity, dto: CreateEventInviteDto) {
     this.assertCoachRole(coach);
     const slot = await this.getCoachEventSlot(eventId, coach.id);
     await this.assertSlotCanAcceptPlayer(slot);
+    const normalizedTargets = this.normalizeInviteTargets(dto.targets);
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const code = generateInviteCode(10);
@@ -164,6 +166,7 @@ export class EventsFacadeService {
     invite.status = InviteStatus.Pending;
     invite.expiresAt = expiresAt;
     invite.playerId = null;
+    invite.targetTelegramNames = normalizedTargets;
     const saved = await this.inviteRepo.save(invite);
 
     return {
@@ -467,5 +470,23 @@ export class EventsFacadeService {
 
   private toIsoDateTime(date: string, time: string) {
     return `${date}T${time}Z`;
+  }
+
+  private normalizeInviteTargets(targets: string[]) {
+    const seen = new Set<string>();
+    const normalized: string[] = [];
+    for (const value of targets) {
+      const username = value.trim().replace(/^@/, '').toLowerCase();
+      if (!username) continue;
+      if (seen.has(username)) {
+        throw eventHttpError(HttpStatus.BAD_REQUEST, 'Дубликаты telegramName в targets запрещены', 'VALIDATION_ERROR');
+      }
+      seen.add(username);
+      normalized.push(username);
+    }
+    if (!normalized.length) {
+      throw eventHttpError(HttpStatus.BAD_REQUEST, 'Нужно указать хотя бы один telegramName', 'VALIDATION_ERROR');
+    }
+    return normalized;
   }
 }

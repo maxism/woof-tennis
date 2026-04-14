@@ -5,6 +5,7 @@ import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { UserEntity } from '../users/entities/user.entity';
 import { AttachPlayerDto } from './dto/attach-player.dto';
 import { CreateEventDto } from './dto/create-event.dto';
+import { CreateEventInviteDto } from './dto/create-event-invite.dto';
 import { QueryMyEventsDto } from './dto/query-my-events.dto';
 import { RescheduleEventDto } from './dto/reschedule-event.dto';
 import { EventsFacadeService } from './events-facade.service';
@@ -39,8 +40,12 @@ export class EventsController {
   }
 
   @Post(':eventId/invite')
-  invite(@Param('eventId', UuidValidationPipe) eventId: string, @CurrentUser() user: UserEntity) {
-    return this.eventsFacadeService.createOrReissueInvite(eventId, user);
+  invite(
+    @Param('eventId', UuidValidationPipe) eventId: string,
+    @CurrentUser() user: UserEntity,
+    @Body() dto: CreateEventInviteDto,
+  ) {
+    return this.eventsFacadeService.createOrReissueInvite(eventId, user, dto);
   }
 
   @Patch(':eventId/cancel')

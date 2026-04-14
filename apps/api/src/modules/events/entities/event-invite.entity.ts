@@ -46,6 +46,9 @@ export class EventInviteEntity {
   @Column({ type: 'varchar', length: 64 })
   code: string;
 
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  targetTelegramNames: string[];
+
   @Column({
     type: 'enum',
     enum: InviteStatus,

@@ -13,6 +13,11 @@ export interface CreateEventBody {
   startsAt: string;
   endsAt: string;
   recurrence: null;
+  isRecurring?: boolean;
+}
+
+export interface CreateInviteBody {
+  targets: string[];
 }
 
 export async function fetchMyEvents(params: FetchMyEventsParams): Promise<EventListResponse> {
@@ -35,7 +40,7 @@ export async function attachPlayer(eventId: string, playerId: string): Promise<E
   return data;
 }
 
-export async function createInvite(eventId: string): Promise<EventInviteResponse> {
-  const { data } = await apiClient.post<EventInviteResponse>(`/events/${eventId}/invite`);
+export async function createInvite(eventId: string, body: CreateInviteBody): Promise<EventInviteResponse> {
+  const { data } = await apiClient.post<EventInviteResponse>(`/events/${eventId}/invite`, body);
   return data;
 }
