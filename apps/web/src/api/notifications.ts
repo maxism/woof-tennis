@@ -21,3 +21,11 @@ export async function markNotificationRead(id: string): Promise<void> {
 export async function markAllNotificationsRead(): Promise<void> {
   await apiClient.post('/notifications/read-all');
 }
+
+export async function fetchUnreadNotificationCount(): Promise<number> {
+  const { data } = await apiClient.get<{ items: unknown[]; total: number }>(
+    '/notifications',
+    { params: { isRead: false, limit: 1, page: 1 } },
+  );
+  return data.total;
+}

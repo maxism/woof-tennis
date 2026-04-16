@@ -1,5 +1,5 @@
 import type { EventItem } from '@wooftennis/shared';
-import { getLocationColor, STATUS_CONFIG, fmtTime } from '@/utils/eventColors';
+import { getLocationColor, STATUS_CONFIG, fmtTime, fmtDuration } from '@/utils/eventColors';
 
 interface Props {
   event: EventItem;
@@ -11,6 +11,7 @@ export function EventCard({ event, onClick }: Props) {
   const status = STATUS_CONFIG[event.status];
   const startTime = fmtTime(event.startsAt);
   const endTime = fmtTime(event.endsAt);
+  const duration = fmtDuration(event.startsAt, event.endsAt);
 
   const isCancelled =
     event.status === 'cancelled' || event.status === 'declined';
@@ -36,7 +37,7 @@ export function EventCard({ event, onClick }: Props) {
       />
 
       {/* Main content */}
-      <div className="flex flex-1 items-start gap-3 px-3 py-3">
+      <div className="flex flex-1 items-center gap-3 px-3 py-3">
         {/* Time column */}
         <div className="flex w-[52px] flex-shrink-0 flex-col items-start">
           <span className="text-sm font-bold leading-tight text-tg-text">
@@ -58,10 +59,17 @@ export function EventCard({ event, onClick }: Props) {
             </span>
           </div>
 
-          {/* Status label */}
-          <span className="text-xs leading-tight text-tg-hint">
-            {status.label}
-          </span>
+          {/* Duration + recurring row */}
+          <div className="flex items-center gap-2">
+            {duration ? (
+              <span className="text-xs leading-tight text-tg-hint">{duration}</span>
+            ) : null}
+            {event.isRecurring ? (
+              <span className="flex items-center gap-0.5 rounded-full bg-woof-accent/10 px-1.5 py-px text-[10px] font-semibold text-woof-accent">
+                ↺ Повтор
+              </span>
+            ) : null}
+          </div>
         </div>
 
         {/* Status badge */}

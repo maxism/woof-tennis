@@ -6,6 +6,7 @@ import { createLocation, fetchMyLocations } from '@/api/locations';
 import { searchUsersByUsername } from '@/api/users';
 import { InviteLinkShare } from '@/components/play/InviteLinkShare';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ROUTES } from '@/utils/constants';
@@ -41,13 +42,7 @@ function Section({
 
 // ─── Tag chip (invite targets) ────────────────────────────────────────────────
 
-function TagChip({
-  value,
-  onRemove,
-}: {
-  value: string;
-  onRemove: () => void;
-}) {
+function TagChip({ value, onRemove }: { value: string; onRemove: () => void }) {
   return (
     <span className="flex items-center gap-1 rounded-full border border-woof-border bg-tg-bg px-3 py-1 text-sm text-tg-text">
       @{value}
@@ -82,15 +77,53 @@ function TerminalCard({
   );
 }
 
+// ─── Date+time row ────────────────────────────────────────────────────────────
+
+function DateTimeRow({
+  label,
+  date,
+  time,
+  onDateChange,
+  onTimeChange,
+}: {
+  label: string;
+  date: string;
+  time: string;
+  onDateChange: (v: string) => void;
+  onTimeChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 text-sm text-tg-hint">{label}</p>
+      <div className="flex gap-2">
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => onDateChange(e.target.value)}
+          className="min-h-11 flex-1 rounded-xl border border-woof-border bg-tg-bg px-3 text-sm text-tg-text outline-none focus:border-woof-accent focus:ring-1 focus:ring-woof-accent"
+        />
+        <input
+          type="time"
+          value={time}
+          onChange={(e) => onTimeChange(e.target.value)}
+          className="min-h-11 w-[100px] flex-shrink-0 rounded-xl border border-woof-border bg-tg-bg px-3 text-sm text-tg-text outline-none focus:border-woof-accent focus:ring-1 focus:ring-woof-accent"
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function CreateEventPage() {
   const qc = useQueryClient();
 
-  // Form state
+  // Form state (split date + time for cleaner UX)
   const [locationId, setLocationId] = useState('');
-  const [startsAt, setStartsAt] = useState('');
-  const [endsAt, setEndsAt] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [playerUsername, setPlayerUsername] = useState('');
   const [inviteTargetInput, setInviteTargetInput] = useState('');
@@ -103,7 +136,6 @@ export function CreateEventPage() {
   const [newLocDescription, setNewLocDescription] = useState('');
   const [newLocWebsite, setNewLocWebsite] = useState('');
 
-  // Result state
   const [createState, setCreateState] = useState<CreateState>({ kind: 'idle' });
 
   // ── Data fetching ────────────────────────────────────────────────────────
@@ -153,7 +185,9 @@ export function CreateEventPage() {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  const toIso = (v: string) => new Date(v).toISOString();
+  /** Combine separate date "YYYY-MM-DD" + time "HH:MM" into ISO string */
+  const toIso = (date: string, time: string) =>
+    new Date(`${date}T${time}`).toISOString();
 
   const addInviteTarget = (value: string) => {
     const n = value.trim().replace(/^@/, '').toLowerCase();
@@ -162,13 +196,19 @@ export function CreateEventPage() {
     setInviteTargetInput('');
   };
 
-  const handleStartsAtChange = (value: string) => {
-    setStartsAt(value);
-    if (!value) return;
-    const end = new Date(value);
-    end.setHours(end.getHours() + 1);
-    const endLocal = end.toISOString().slice(0, 16);
-    if (!endsAt || new Date(endsAt) <= new Date(value)) setEndsAt(endLocal);
+  const handleStartDateChange = (date: string, time: string) => {
+    setStartDate(date);
+    if (!date || !time) return;
+    // Auto-set end to +1h if end is empty or before start
+    const start = new Date(`${date}T${time}`);
+    const end = new Date(start.getTime() + 3_600_000);
+    const eDate = end.toISOString().slice(0, 10);
+    const eTime = end.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const endDt = endDate && endTime ? new Date(`${endDate}T${endTime}`) : null;
+    if (!endDt || endDt <= start) {
+      setEndDate(eDate);
+      setEndTime(eTime);
+    }
   };
 
   // ── Actions ──────────────────────────────────────────────────────────────
@@ -178,8 +218,8 @@ export function CreateEventPage() {
     try {
       const event = await createEventMutation.mutateAsync({
         locationId,
-        startsAt: toIso(startsAt),
-        endsAt: toIso(endsAt),
+        startsAt: toIso(startDate, startTime),
+        endsAt: toIso(endDate, endTime),
         recurrence: null,
         isRecurring,
       });
@@ -197,8 +237,8 @@ export function CreateEventPage() {
     try {
       const event = await createEventMutation.mutateAsync({
         locationId,
-        startsAt: toIso(startsAt),
-        endsAt: toIso(endsAt),
+        startsAt: toIso(startDate, startTime),
+        endsAt: toIso(endDate, endTime),
         recurrence: null,
         isRecurring,
       });
@@ -219,9 +259,7 @@ export function CreateEventPage() {
   if (createState.kind === 'attach-success') {
     return (
       <TerminalCard title={t('event', 'attachSuccess')}>
-        <p className="mb-4 text-sm text-tg-hint">
-          Игрок получит уведомление в Telegram.
-        </p>
+        <p className="mb-4 text-sm text-tg-hint">Игрок получит уведомление в Telegram.</p>
         <Link to={ROUTES.home}>
           <Button className="w-full">{t('event', 'attachCta')}</Button>
         </Link>
@@ -251,8 +289,9 @@ export function CreateEventPage() {
   // ── Form ─────────────────────────────────────────────────────────────────
 
   const isPending = createEventMutation.isPending || createLocationMutation.isPending;
-  const canAttach = Boolean(locationId && startsAt && endsAt && resolvedPlayerId);
-  const canInvite = Boolean(locationId && startsAt && endsAt && inviteTargets.length);
+  const hasValidTime = Boolean(startDate && startTime && endDate && endTime);
+  const canAttach = Boolean(locationId && hasValidTime && resolvedPlayerId);
+  const canInvite = Boolean(locationId && hasValidTime && inviteTargets.length);
 
   return (
     <div className="flex flex-col gap-4">
@@ -260,28 +299,28 @@ export function CreateEventPage() {
 
       {/* ── Когда ── */}
       <Section label="Когда">
-        <div className="flex flex-col gap-2">
-          <Input
-            type="datetime-local"
+        <div className="flex flex-col gap-3">
+          <DateTimeRow
             label={t('event', 'startsAt')}
-            value={startsAt}
-            onChange={(e) => handleStartsAtChange(e.target.value)}
+            date={startDate}
+            time={startTime}
+            onDateChange={(d) => handleStartDateChange(d, startTime)}
+            onTimeChange={(ti) => handleStartDateChange(startDate, ti)}
           />
-          <Input
-            type="datetime-local"
+          <DateTimeRow
             label={t('event', 'endsAt')}
-            value={endsAt}
-            onChange={(e) => setEndsAt(e.target.value)}
+            date={endDate}
+            time={endTime}
+            onDateChange={setEndDate}
+            onTimeChange={setEndTime}
           />
-          <label className="flex cursor-pointer items-center gap-2 pt-1 text-sm text-tg-text">
-            <input
-              type="checkbox"
+          <div className="pt-1">
+            <Checkbox
               checked={isRecurring}
-              onChange={(e) => setIsRecurring(e.target.checked)}
-              className="h-4 w-4 accent-woof-accent"
+              onChange={setIsRecurring}
+              label={t('event', 'recurring')}
             />
-            {t('event', 'recurring')}
-          </label>
+          </div>
         </div>
       </Section>
 
@@ -361,29 +400,37 @@ export function CreateEventPage() {
 
           {/* Autocomplete suggestions */}
           {playerSuggestionsQuery.data?.length ? (
-            <div className="rounded-xl border border-woof-border bg-tg-bg">
-              {playerSuggestionsQuery.data.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-tg-text hover:bg-tg-secondary-bg"
-                  onClick={() =>
-                    setPlayerUsername(c.username ? `@${c.username}` : '')
-                  }
-                >
-                  <span className="font-medium">
-                    {[c.firstName, c.lastName].filter(Boolean).join(' ')}
-                  </span>
-                  {c.username ? (
-                    <span className="text-xs text-tg-hint">@{c.username}</span>
-                  ) : null}
-                  {resolvedPlayerId === c.id ? (
-                    <span className="ml-auto text-xs font-semibold text-woof-accent">
-                      ✓
-                    </span>
-                  ) : null}
-                </button>
-              ))}
+            <div className="overflow-hidden rounded-xl border border-woof-border bg-tg-bg">
+              {playerSuggestionsQuery.data.map((c) => {
+                const isMatch = resolvedPlayerId === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors ${
+                      isMatch ? 'bg-woof-accent/10' : 'hover:bg-tg-secondary-bg'
+                    }`}
+                    onClick={() =>
+                      setPlayerUsername(c.username ? `@${c.username}` : '')
+                    }
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-woof-accent/20 text-xs font-semibold text-woof-accent">
+                      {c.firstName?.[0]?.toUpperCase() ?? '?'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-tg-text">
+                        {[c.firstName, c.lastName].filter(Boolean).join(' ')}
+                      </p>
+                      {c.username ? (
+                        <p className="truncate text-xs text-tg-hint">@{c.username}</p>
+                      ) : null}
+                    </div>
+                    {isMatch ? (
+                      <span className="flex-shrink-0 text-sm text-woof-accent">✓</span>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
           ) : null}
         </div>

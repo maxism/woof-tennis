@@ -73,6 +73,19 @@ export const STATUS_CONFIG: Record<EventStatus, StatusConfig> = {
   },
 };
 
+/** Duration between two ISO datetimes as "X ч Y мин" / "X ч" / "Y мин". */
+export function fmtDuration(startsAt: string, endsAt: string): string {
+  const totalMins = Math.round(
+    (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60_000,
+  );
+  if (totalMins <= 0) return '';
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  if (h > 0 && m > 0) return `${h} ч ${m} мин`;
+  if (h > 0) return `${h} ч`;
+  return `${m} мин`;
+}
+
 /** Format ISO datetime to "HH:MM" in local time. */
 export function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('ru-RU', {

@@ -63,6 +63,10 @@ export function miniAppReady(): void {
 }
 
 export function syncThemeFromTelegram(): void {
+  // Respect manual user override — don't override with TG theme if user chose explicitly.
+  const override = localStorage.getItem('woof-theme');
+  if (override === 'light' || override === 'dark') return;
+
   const scheme = window.Telegram?.WebApp?.colorScheme;
   if (scheme === 'dark') {
     document.documentElement.dataset.theme = 'dark';

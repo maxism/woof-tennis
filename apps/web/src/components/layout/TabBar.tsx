@@ -1,4 +1,7 @@
+import { useQuery } from '@tanstack/react-query';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { fetchUnreadNotificationCount } from '@/api/notifications';
+import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/utils/constants';
 import { t } from '@/utils/i18n';
 
@@ -59,11 +62,22 @@ function IconPlus() {
 
 export function TabBar() {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  const { data: unreadCount } = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: fetchUnreadNotificationCount,
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+
+  const hasUnread = (unreadCount ?? 0) > 0;
 
   return (
     <nav className="safe-pb fixed bottom-0 left-0 right-0 z-40">
-      {/* FAB — floats above the bar */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex -translate-y-7 justify-center">
+      {/* FAB — floats above the bar; z-10 ensures it renders above the bar strip */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex -translate-y-7 justify-center">
         <button
           type="button"
           onClick={() => navigate(ROUTES.play.create)}
@@ -110,7 +124,12 @@ export function TabBar() {
             >
               {({ isActive }) => (
                 <>
-                  <IconProfile active={isActive} />
+                  <div className="relative">
+                    <IconProfile active={isActive} />
+                    {hasUnread ? (
+                      <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" />
+                    ) : null}
+                  </div>
                   <span>{t('nav', 'profile')}</span>
                 </>
               )}

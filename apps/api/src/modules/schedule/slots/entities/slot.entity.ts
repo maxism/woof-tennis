@@ -68,6 +68,9 @@ export class SlotEntity {
   })
   source: SlotSource;
 
+  @Column({ type: 'boolean', default: false })
+  isRecurring: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

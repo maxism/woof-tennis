@@ -23,8 +23,10 @@ type EventDto = {
   locationName?: string;
   startsAt: string;
   endsAt: string;
+  isRecurring: boolean;
   status: EventStatus;
   inviteId: string | null;
+  inviteCode: string | null;
   inviteExpiresAt: string | null;
   source: 'manual' | 'template';
   createdAt: string;
@@ -108,6 +110,7 @@ export class EventsFacadeService {
       maxPlayers: 1,
       status: SlotStatus.Available,
       source: SlotSource.Manual,
+      isRecurring: dto.isRecurring ?? false,
     });
 
     const saved = await this.slotRepo.save(slot);
@@ -428,8 +431,10 @@ export class EventsFacadeService {
       locationName: slot.location?.name,
       startsAt: this.toIsoDateTime(slot.date, slot.startTime),
       endsAt: this.toIsoDateTime(slot.date, slot.endTime),
+      isRecurring: slot.isRecurring,
       status: forcedStatus ?? this.resolveStatus(slot, resolvedBooking, resolvedInvite),
       inviteId: resolvedInvite?.id ?? null,
+      inviteCode: resolvedInvite?.code ?? null,
       inviteExpiresAt: resolvedInvite?.expiresAt?.toISOString() ?? null,
       source: slot.source as 'manual' | 'template',
       createdAt: slot.createdAt.toISOString(),

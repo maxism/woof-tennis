@@ -1,33 +1,42 @@
-import { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import type { EventItem } from '@wooftennis/shared';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { RoleSwitch } from '@/components/layout/RoleSwitch';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
-import { Select } from '@/components/ui/Select';
 import { EventsList } from '@/components/events/EventsList';
-import { fetchMyLocations } from '@/api/locations';
+import { EventDetailSheet } from '@/components/events/EventDetailSheet';
 import { useMyTimelineEvents } from '@/hooks/useEvents';
+import { getLocationColor } from '@/utils/eventColors';
 import { t } from '@/utils/i18n';
 
 export function HomePage() {
   const isCoach = useAuthStore((s) => s.user?.isCoach);
   const activeRole = useUIStore((s) => s.activeRole);
-  const locationId = useUIStore((s) => s.homeLocationId);
-  const setLocationId = useUIStore((s) => s.setHomeLocationId);
   const homeScrollY = useUIStore((s) => s.homeScrollYByRole[activeRole]);
   const setHomeScrollY = useUIStore((s) => s.setHomeScrollY);
 
+  const [locationFilter, setLocationFilter] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+
   const eventsQuery = useMyTimelineEvents();
 
-  // Locations are only needed for the coach filter selector
-  const locationsQuery = useQuery({
-    queryKey: ['locations', 'mine', 'home-filter'],
-    queryFn: () => fetchMyLocations(),
-    enabled: Boolean(isCoach && activeRole === 'coach'),
-    staleTime: 300_000,
-  });
+  // Derive unique locations from events for chip filter
+  const locations = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const e of eventsQuery.data?.items ?? []) {
+      if (e.locationName) map.set(e.locationId, e.locationName);
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [eventsQuery.data]);
+
+  // Client-side filter
+  const filteredEvents = useMemo(() => {
+    const items = eventsQuery.data?.items ?? [];
+    if (!locationFilter) return items;
+    return items.filter((e) => e.locationId === locationFilter);
+  }, [eventsQuery.data, locationFilter]);
 
   useEffect(() => {
     if (typeof homeScrollY === 'number') {
@@ -42,26 +51,53 @@ export function HomePage() {
     [activeRole, setHomeScrollY],
   );
 
+  // Reset filter when switching role
+  useEffect(() => {
+    setLocationFilter(null);
+  }, [activeRole]);
+
   return (
     <div>
       {/* Role switcher for dual-role users */}
       {isCoach ? <RoleSwitch /> : null}
 
-      {/* Location filter — only coaches in coach mode */}
-      {isCoach && activeRole === 'coach' && (locationsQuery.data?.length ?? 0) > 0 ? (
-        <div className="mb-4">
-          <Select
-            value={locationId ?? ''}
-            onChange={(e) => setLocationId(e.target.value || null)}
-            aria-label="Фильтр по локации"
+      {/* Location filter chips */}
+      {locations.length > 1 ? (
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button
+            type="button"
+            onClick={() => setLocationFilter(null)}
+            className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              !locationFilter
+                ? 'border-woof-accent bg-woof-accent text-white'
+                : 'border-woof-border bg-tg-secondary-bg text-tg-hint'
+            }`}
           >
-            <option value="">Все локации</option>
-            {locationsQuery.data?.map((loc) => (
-              <option key={loc.id} value={loc.id}>
+            Все
+          </button>
+          {locations.map((loc) => {
+            const color = getLocationColor(loc.id);
+            const active = locationFilter === loc.id;
+            return (
+              <button
+                key={loc.id}
+                type="button"
+                onClick={() => setLocationFilter(active ? null : loc.id)}
+                className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  active
+                    ? 'border-transparent text-white'
+                    : 'border-woof-border bg-tg-secondary-bg text-tg-hint'
+                }`}
+                style={active ? { backgroundColor: color, borderColor: color } : undefined}
+              >
+                <span
+                  className="h-2 w-2 flex-shrink-0 rounded-full"
+                  style={{ backgroundColor: active ? 'rgba(255,255,255,0.7)' : color }}
+                />
                 {loc.name}
-              </option>
-            ))}
-          </Select>
+              </button>
+            );
+          })}
         </div>
       ) : null}
 
@@ -90,7 +126,7 @@ export function HomePage() {
       ) : null}
 
       {/* Empty state */}
-      {!eventsQuery.isLoading && !eventsQuery.isError && !eventsQuery.data?.items.length ? (
+      {!eventsQuery.isLoading && !eventsQuery.isError && !filteredEvents.length ? (
         <EmptyState
           title={t('home', 'emptyTitle')}
           description="Нажмите + чтобы создать первое событие"
@@ -98,9 +134,18 @@ export function HomePage() {
       ) : null}
 
       {/* Events grouped by day */}
-      {eventsQuery.data?.items.length ? (
-        <EventsList events={eventsQuery.data.items} />
+      {filteredEvents.length ? (
+        <EventsList
+          events={filteredEvents}
+          onEventClick={(event) => setSelectedEvent(event)}
+        />
       ) : null}
+
+      {/* Event detail bottom sheet */}
+      <EventDetailSheet
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+      />
     </div>
   );
 }

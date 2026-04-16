@@ -44,3 +44,21 @@ export async function createInvite(eventId: string, body: CreateInviteBody): Pro
   const { data } = await apiClient.post<EventInviteResponse>(`/events/${eventId}/invite`, body);
   return data;
 }
+
+export async function cancelEvent(eventId: string): Promise<EventItem> {
+  const { data } = await apiClient.patch<EventItem>(`/events/${eventId}/cancel`);
+  return data;
+}
+
+export async function completeEvent(eventId: string): Promise<EventItem> {
+  const { data } = await apiClient.patch<EventItem>(`/events/${eventId}/complete`);
+  return data;
+}
+
+export async function rescheduleEvent(
+  eventId: string,
+  body: { startsAt: string; endsAt: string },
+): Promise<EventItem> {
+  const { data } = await apiClient.patch<EventItem>(`/events/${eventId}/reschedule`, body);
+  return data;
+}

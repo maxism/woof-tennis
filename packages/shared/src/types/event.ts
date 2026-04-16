@@ -8,8 +8,10 @@ export interface EventItem {
   locationName?: string;
   startsAt: string;
   endsAt: string;
+  isRecurring: boolean;
   status: EventStatus;
   inviteId: string | null;
+  inviteCode: string | null;
   inviteExpiresAt: string | null;
   source: 'manual' | 'template';
   createdAt: string;
